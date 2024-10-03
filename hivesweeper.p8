@@ -98,8 +98,23 @@ function _draw()cls()
  --highlight selected
  if revealed[selecting]==false then
  	hilight(hives_screen_pos[selecting])
- 	local adj={-hive_size-1,-hive_size,-1,1,hive_size-1,hive_size}
-
+ 	local mod_x=selecting%hive_size
+ 	--odd row or not
+ 	local y_=flr(selecting/hive_size)
+ 	local odd=(y_%2==0) and 0 or 1
+ 	--corner fixing
+ 	if(mod_x==0 and y_%2==0)odd=1
+ 	if(mod_x==0 and y_%2==1)odd=0
+ 	local adj={-hive_size-1+odd,-hive_size+odd,-1,1,hive_size-1+odd,hive_size+odd}
+ 	for i=1,#adj do
+ 	 local id=selecting+adj[i]
+ 	 mod_ax=id%hive_size
+ 	 --if in hive range
+ 	 if id>0 and id<=hive_size*hive_size 
+ 	 and id%hive_size then
+ 	  hilight(hives_screen_pos[id])
+ 	 end
+ 	end
  end
  
  --draw mouse
