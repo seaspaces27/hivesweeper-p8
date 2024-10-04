@@ -2,7 +2,6 @@ pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
 function _init()
- //sfx(1)
  new_hive(8)
  poke(0x5f2d, 1) --mouse mode
 end
@@ -97,23 +96,11 @@ function _draw()cls()
  end
  --highlight selected
  if revealed[selecting]==false then
- 	hilight(hives_screen_pos[selecting])
- 	local mod_x=selecting%hive_size
- 	--odd row or not
- 	local y_=flr(selecting/hive_size)
- 	local odd=(y_%2==0) and 0 or 1
- 	--corner fixing
- 	if(mod_x==0 and y_%2==0)odd=1
- 	if(mod_x==0 and y_%2==1)odd=0
- 	local adj={-hive_size-1+odd,-hive_size+odd,-1,1,hive_size-1+odd,hive_size+odd}
+ 	//hilight(hives_screen_pos[selecting])
+ 	print("\#1"..ceil(selecting/hive_size))
+ 	local adj=neighbours(selecting)
  	for i=1,#adj do
- 	 local id=selecting+adj[i]
- 	 mod_ax=id%hive_size
- 	 --if in hive range
- 	 if id>0 and id<=hive_size*hive_size 
- 	 and id%hive_size then
- 	  hilight(hives_screen_pos[id])
- 	 end
+ 	 hilight(hives_screen_pos[adj[i]])
  	end
  end
  
@@ -123,6 +110,32 @@ function _draw()cls()
  if(mpressed)id=18
  spr(id,mx,my)
  pal()
+end
+
+function neighbours(id)
+ local mod_x=id%hive_size
+	--odd row or not
+	local y_=ceil(id/hive_size)
+	local odd=(y_%2==0) and 1 or 0
+	--corner fixing
+	if(mod_x==0 and y_%2==0)odd=1
+	if(mod_x==0 and y_%2==1)odd=0
+	local adj={-hive_size-1+odd,-hive_size+odd,-1,1,hive_size-1+odd,hive_size+odd}
+	local out={}
+	for i=#adj,1,-1 do
+	 local n_id=id+adj[i]
+	 mod_ax=n_id%hive_size
+	 --if in hive range
+	 if (n_id>0 and n_id<=hive_size*hive_size 
+	 and n_id%hive_size) then
+	  --if neighbor on expected target y
+	  ty=(i<=2 and -1 or (i>4 and 1 or 0))+y_
+	  if ceil((n_id)/hive_size)==ty then
+	   add(out,n_id)
+	  end
+	 end
+	end
+	return out
 end
 
 --highlight
