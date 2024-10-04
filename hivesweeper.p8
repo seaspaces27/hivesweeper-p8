@@ -20,7 +20,7 @@ function new_hive(sz,bees)
 	end
 	mines[sz*sz]=false
 	
-	bees_left=bees or sz --add bees to map
+	bees_left=bees or sz*2 --add bees to map
 	while bees_left>0 do
 	 local id=flr(rnd(sz*sz))
 	 if beehive[id]=="#" then
@@ -30,6 +30,7 @@ function new_hive(sz,bees)
 	 end
 	end
 	revealed={} --cells shown
+	reveal_que={} --cells to be shown
 	for i=1,sz*sz do
 	 revealed[i]=false
 	end
@@ -70,10 +71,27 @@ function _update()
   and my>=cell[2] and my<cell[2]+8)then
   	selecting=i
   	if(mpressed) and revealed[i]==false then
-  	 revealed[i]=true
-  	 sfx(2)
+  	 //revealed[i]=true
+  	 local check=mark_hex(i,10)
+  	 check.t=0
+  	 --add(reveal_que,check)
+  	 
   	end
   end
+ end
+ 
+ --update cells in reveal que
+ if #reveal_que>=0 then
+	 for i=1,#reveal_que do--#reveal_que,1,-1 do
+	  local check=reveal_que[i]
+	  if(check)then
+	   check:upd()
+	   if check.t==0 or check.done then
+	    check:set()
+	    //del(reveal_que,reveal_que[i])
+	   end
+	  end
+	 end
  end
 end
 
@@ -107,7 +125,10 @@ function _draw()cls()
  	 hilight(hives_screen_pos[adj[i]])
  	end
  end
- 
+ ?"\#1"..#reveal_que
+ for i=1,#reveal_que do
+  reveal_que[i]:drw()
+ end
  --draw mouse
  pal(1,0)
  local id=17
@@ -140,6 +161,53 @@ function neighbours(id)
 	 end
 	end
 	return out
+end
+
+function mark_hex(id,t)
+ local mark={}
+ mark.id=id
+ mark.t=t or 0
+ mark.full_t=t
+ mark.done=false
+ mark.set=function(s)
+  --if cell isnt already revealed
+  if revealed[s.id]==false then
+   --if cell has no bees near
+   if ((numbers[s.id] or 0)==0) then
+    local m_adj=neighbours(s.id)
+	   for i=1,#m_adj do
+	    local n_id=m_adj[i]
+	    if revealed[n_id]==false then
+	     --put new mark for cell 
+	     --on que, inherit stats
+	     local new_mark=mark_hex(n_id)
+	     for j,val in pairs(s) do
+	      new_mark[j]=val
+	     end
+	     --reset delay as by now its 0
+	     new_mark.id=n_id
+	     new_mark.t=s.full_t
+	    end
+	   end
+   end
+  end
+	 revealed[s.id]=true
+	 s.done=true sfx(2)
+	 del(reveal_que,s)
+ end
+ mark.upd=function(s)
+  if s.t>1 then
+   s.t-=1
+  else
+   s.set(s)
+  end
+ end
+ mark.drw=function(s)
+  local cell=hives_screen_pos[s.id]
+  circfill(cell[1]+4,cell[2]+4,(1-(s.t/s.full_t))*8)
+ end
+ add(reveal_que,mark)
+ return mark
 end
 
 --highlight
@@ -207,6 +275,6 @@ __gfx__
 __sfx__
 010100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 01100000101501b000140001a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-010600000c01521615216140000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010600000c02521615216140000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 050100000d1001011011120131301413015140161501715016150141501315012150121401214012140121301213015140161401a1501b1501a150191501a1501a1501c1501c1501a14017120151201413012140
 01020000200102201023020230202303006040060501d050130300d03000000000000000000000000000c0300e040170501a05018050140500e0300d02000000220502205012050120500a0500a0500a05000000
