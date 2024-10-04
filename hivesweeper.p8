@@ -35,6 +35,7 @@ function new_hive(sz,bees)
 	end
 	flagged={} --cells flagged
 	numbers={} --no. of adjacents
+	numbers=load_bees()
 	
 	--generate hive position on screen
 	hives_screen_pos={}
@@ -92,12 +93,15 @@ function _draw()cls()
    id=5
   end
   spr(id,cell[1],cell[2])
+  
+  print((beehive[i]~="b" and numbers[i]) or "",
+  cell[1]+2,cell[2]+1,7)
   //print(beehive[i],cell[1],cell[2],7)
  end
  --highlight selected
  if revealed[selecting]==false then
  	//hilight(hives_screen_pos[selecting])
- 	print("\#1"..ceil(selecting/hive_size))
+ 	print("\#1"..(selecting-1)%hive_size..","..ceil(selecting/hive_size)-1)
  	local adj=neighbours(selecting)
  	for i=1,#adj do
  	 hilight(hives_screen_pos[adj[i]])
@@ -141,6 +145,31 @@ end
 --highlight
 function hilight(cell)
  spr(3,cell[1],cell[2])
+end
+
+function load_bees()
+ numbers={}
+ --for every bee/mine
+	for i=1,#mines do
+	 if mines[i]==true then
+		 local adj=neighbours(i)
+		 --explore all bees neighbourhoods
+		 for j=1,#adj do
+		  local n_id=adj[j]
+		  if numbers[n_id] then--if exists
+		   numbers[n_id]+=1
+		  else --first bee/mine near it
+		   numbers[n_id]=1
+		  end
+		 end
+	 end
+	end
+	return numbers
+end
+
+function cprint(txt,x,y,c)
+ local ox=(print(txt)-x)
+ print(txt,x+ox,y,c)
 end
 __gfx__
 00000000000900200001000000000000000000002009002000000000000000000000000000000000000000000000000000000000000000000000000000000000
