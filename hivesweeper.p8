@@ -115,10 +115,30 @@ function set_plrs(ppl)
 	 	 if(s.cooldown>=1)s.cooldown-=1
 	 	end
 	 	--activate a hidden cell
-	 	if s.ap and revealed[s.id]==false and flagfield[s.id]==nil then
-	 	 local check=mark_hex(s.id,5)
-  	 check.t=0
-  	 check:set()
+	 	if s.ap and flagfield[s.id]==nil then
+	 	 if revealed[s.id]==false then
+		 	 local check=mark_hex(s.id,5)
+	  	 check.t=0
+	  	 check:set()
+  	 else--activate neighbours if flags-bee is met
+  	  local adj=neighbours(s.id)
+  	  local nonflags={}
+  	  local flags_near=0
+  	  for j=1,#adj do --get flags
+  	   if(flagfield[adj[j]]or 0)>0then
+  	    flags_near+=1
+  	   else
+  	    add(nonflags,adj[j])
+  	   end
+  	  end
+  	  if flags_near==numbers[s.id]then
+  	   for j=1,#nonflags do
+  	    local check=mark_hex(nonflags[j],5)
+	  	   check.t=0
+	  	   check:set()
+  	   end
+  	  end
+  	 end
   	end
   	--flag a cell
   	if s.bp and revealed[s.id]==false then
@@ -201,6 +221,10 @@ function new_hive(wi,hi,bees)
  	add(hives_screen_pos,
  	{x_os+(x*8),y_os+(y*8)})
  end
+ 
+ for i=1,#players do
+  players[i].id=flr((hexs/4)+(hexs/3)*(i/#players))
+ end
  sfx(4)
 end
 
@@ -268,8 +292,26 @@ function _update()
   	if(mpressed) and revealed[i]==false and flagfield[i]==nil then
   	 local check=mark_hex(i,5)
   	 check.t=0
+  	elseif(mpressed)and revealed[i]==true then
+  	 local adj=neighbours(i)
+  	  local nonflags={}
+  	  local flags_near=0
+  	  for j=1,#adj do --get flags
+  	   if(flagfield[adj[j]]or 0)>0then
+  	    flags_near+=1
+  	   else
+  	    add(nonflags,adj[j])
+  	   end
+  	  end
+  	  if flags_near==numbers[i]then
+  	   for j=1,#nonflags do
+  	    local check=mark_hex(nonflags[j],5)
+	  	   check.t=0
+	  	   check:set()
+  	   end
+  	  end
   	elseif(mressed) and revealed[i]==false then
-	    --is a flag already there?
+	   --is a flag already there?
   	 local occupied=false
   	 for j=1,#flags do
   	  local fl=flags[j]
@@ -342,7 +384,7 @@ function _draw()cls()
  	//print("\#1"..(selecting-1)%hive_size..","..ceil(selecting/hive_size)-1)
  	local adj=neighbours(selecting)
  	for i=1,#adj do
- 	 hilight(hives_screen_pos[adj[i]])
+ 	 --hilight(hives_screen_pos[adj[i]])
  	end
  end
  //?"\#1"..#reveal_que
