@@ -2,10 +2,55 @@ pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
 function _init()
- set_plrs(4)
- new_hive(15,10)
+ set_plrs(1)
+ //new_hive(15,10)
+ //new_hive(1,10)
  poke(0x5f2d, 1) --mouse mode
  debug=false--true
+ init_menu()
+end
+
+
+function init_menu()
+	menu={}
+	menu.screen=0
+ --menu.tiles={"play","options"}
+ menu.active=true
+ 
+ menu.init=function(s)
+  if s.screen==0 then
+   s.tiles={"play","options"}
+  end
+  if s.screen==1 then
+   s.tiles={"mouse (classic)","regular"}
+  end
+  new_hive(1,#menu.tiles+8)
+ end
+ menu:init()
+ menu.call=function(s,id)
+  if(s.tiles[id]=="play")then
+  	menu.screen=1
+  	menu:init()
+  elseif(s.tiles[id]=="mouse (classic)")then
+  	menu.active=false
+  	set_plrs(0)
+   new_hive(15,10)
+  elseif(s.tiles[id]=="regular")then
+  	menu.active=false
+   new_hive(15,10)
+  end
+ end
+ menu.upd=function(s)
+  
+ end
+ menu.drw=function(s)
+  for i=1,#s.tiles do
+   local ox=9
+   local cell=hives_screen_pos[i]
+   print(s.tiles[i],
+   cell[1]+ox,cell[2],7)
+  end
+ end
 end
 
 function setchr(s,i,c)
@@ -14,22 +59,7 @@ end
 num_cols={12,11,8,12,14,13,5}
 cols={8,9,10,11,12,13,14,15,6,7}
 cols_shade={4,2,9,3,5,5,4,4,13,6}
-function sprot(dx,dy,h,w,mx,my,rot)
- --dx the x position of the sprite
- --dy the y position of the sprite
- --h the height of the sprite from the map
- --w the width of the sprite from the map
- --rot = 1 rotate 90 degrees anticlockwise
- --rot = -1 rotate 90 degrees clockwise
- rot = rot or 1
- if rot!=1 then
-  dx+=8
- end
- for i=0,w-1 do
-	 local nx=dx+(i*rot)
-	 tline(nx,dy,nx,dy+h,mx,my+i/8)
- end
-end
+
 function sp_part(id,x,y,dx,dy,ang_change)
  pa={}pa.tag=nil pa.id=id or 0
  pa.ang_change=ang_change pa.recol={}
@@ -166,6 +196,13 @@ function set_plrs(ppl)
 			 	  (s.last_hin==1and "br")or
 			 	  (s.last_hin==-1and "bl")
 			 	))
+			 	--go to empty space
+			 	if transpose(s.id,"br")==nil then
+			 	 s.togo=transpose(s.id,"bl")
+			 	end 
+			 	if transpose(s.id,"bl")==nil then
+			 	 s.togo=transpose(s.id,"br")
+			 	end 
 			 	--s.cooldown=(s.togo~=s.id)and cl or s.cooldown
 		 	end
 		 	if s.vin==-1 then --up
@@ -176,6 +213,13 @@ function set_plrs(ppl)
 			 	  (s.last_hin==1and "tr")or
 			 	  (s.last_hin==-1and "tl")
 			 	))
+			 	--go to empty space
+			 	if transpose(s.id,"tr")==nil then
+			 	 s.togo=transpose(s.id,"tl")
+			 	end 
+			 	if transpose(s.id,"tl")==nil then
+			 	 s.togo=transpose(s.id,"tr")
+			 	end 
 			 	--s.cooldown=(s.togo~=s.id)and cl or s.cooldown
 		 	end
 		 	if s.vin==0then--left right
@@ -293,8 +337,8 @@ function new_hive(wi,hi,bees)
  for i=1,#players do
   players[i].id=flr((hexs/4)+(hexs/3)*(i/#players))
  end
- first_call=true --first click should be free
- sfx(4)
+  --first click should be free
+ if(not menu.active)sfx(4)first_call=true
 end
 
 function _update60()
@@ -414,6 +458,8 @@ function _update60()
   pa:upd()
  end
  
+ --menu
+ if(menu.active)menu:upd()
  
  --update cells in reveal que
  if #reveal_que>=0 then
@@ -469,6 +515,8 @@ function _draw()cls()
  	 --hilight(hives_screen_pos[adj[i]])
  	end
  end
+ --menu
+ if(menu.active)menu:drw()
  //?"\#1"..#reveal_que
  //?"\#5"..#players
  for i=1,#reveal_que do
@@ -674,11 +722,17 @@ function open_cell(i,plr)
 	if first_call then --first click is safe
   first_call=false sfx(12)
   relocate_bee(i)
+  for i=1,#players do
+   players[i].first_call=false
+  end
  else
   sfx(13)
  end
  local check=mark_hex(i,5)
  check.t=0
+ if menu.active then
+  menu.call(menu,i)
+ end
 end
 
 function chord_cell(i,perform)
@@ -726,6 +780,23 @@ function release_cell(i,plr)
   hives_screen_pos[selecting].pressing=nil
  end
  selecting=nil
+end
+-->8
+function sprot(dx,dy,h,w,mx,my,rot)
+ --dx the x position of the sprite
+ --dy the y position of the sprite
+ --h the height of the sprite from the map
+ --w the width of the sprite from the map
+ --rot = 1 rotate 90 degrees anticlockwise
+ --rot = -1 rotate 90 degrees clockwise
+ rot = rot or 1
+ if rot!=1 then
+  dx+=8
+ end
+ for i=0,w-1 do
+	 local nx=dx+(i*rot)
+	 tline(nx,dy,nx,dy+h,mx,my+i/8)
+ end
 end
 __gfx__
 00000000000900200001000000000000000000000009000000000000000000007777000000000000660000660000000000000000000000000000000000000000
