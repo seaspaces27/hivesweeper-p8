@@ -7,16 +7,21 @@ function _init()
  //new_hive(1,10)
  poke(0x5f2d, 1) --mouse mode
  debug=false--true
+ unopened=0 total_bees=0
  init_menu()
 end
 
 
 function init_menu()
-	menu={}
-	menu.screen=0
+	menu={}menu.mode="menu"
+	menu.screen=0 menu.offset=0
  --menu.tiles={"play","options"}
  menu.active=true
- 
+ menu.reset=function(s)
+  s.mode="menu"
+		s.screen=0 s.offset=0
+	 s.active=true s:init()
+ end
  menu.init=function(s)
   if s.screen==0 then
    s.tiles={"play","options"}
@@ -28,16 +33,20 @@ function init_menu()
  end
  menu:init()
  menu.call=function(s,id)
-  if(s.tiles[id]=="play")then
+  s.mode=(id and s.tiles[id+s.offset])or s.mode
+  if(s.mode=="play")then
   	menu.screen=1
   	menu:init()
-  elseif(s.tiles[id]=="mouse (classic)")then
+  elseif(s.mode=="mouse (classic)")then
   	menu.active=false
   	set_plrs(0)
    new_hive(15,10)
-  elseif(s.tiles[id]=="regular")then
+  elseif(s.mode=="regular")then
   	menu.active=false
    new_hive(15,10)
+  end
+  if not gamerunning then
+   --s.offset=#beehive
   end
  end
  menu.upd=function(s)
@@ -57,9 +66,10 @@ function setchr(s,i,c)
  return sub(s,1,i-1)..c..sub(s,i+1)
 end
 num_cols={12,11,8,12,14,13,5}
-cols={8,9,10,11,12,13,14,15,6,7}
-cols_shade={4,2,9,3,5,5,4,4,13,6}
-
+--cols={8,9,10,11,12,13,14,15,6,7}
+--cols_shade={4,2,9,3,5,5,4,4,13,6}
+cols={7,6,13,5}
+cols_shade={6,1,5,1}
 function sp_part(id,x,y,dx,dy,ang_change)
  pa={}pa.tag=nil pa.id=id or 0
  pa.ang_change=ang_change pa.recol={}
@@ -268,6 +278,7 @@ function set_plrs(ppl)
  	 s.last_hin=s.hin~=0and s.hin or s.last_hin
 	 	s.prev_a=s.a
 	 	
+	 	s.id=min(s.id,#hives_screen_pos)
 	 	local cell=hives_screen_pos[s.id]
 	 	s.x+=((cell[1]+3)-s.x)*.35 //.4
 	 	s.y+=((cell[2]+3)-s.y)*.35 //.7
@@ -288,20 +299,42 @@ function set_plrs(ppl)
   players[i]=plr
  end
 end
-
+function new_cell(i)i=i or #beehive+1
+	beehive=beehive.."#"
+	mines[i]=false
+	revealed[i]=false
+	hex_pos(i-1,x_os,y_os)
+	return hives_screen_pos[#beehive]
+end
+function hex_pos(i)
+ local offset=0local y=flr(i/hive_wi)
+ if(y%2==1)offset=.5
+	local x=((i+offset)%hive_wi)
+	add(hives_screen_pos,
+	{x_os+(x*8),y_os+(y*7)})
+end
 function new_hive(wi,hi,bees)
  mines={} sz=wi hi=hi or wi
 	beehive="" hive_size=sz
 	hive_wi=wi or 8
 	hive_hi=hi or wi
 	hexs=wi*hi
+	
+	revealed={} --cells shown
+	reveal_que={} --cells to be shown
+	--generate hive position on screen
+	hives_screen_pos={}
+	x_os=64-(hive_wi*4)
+	y_os=64-(hive_hi*4)
+	for i=0,hexs-1 do 
+  --hex_pos(i,x_os,y_os)
+ end
 	for i=1,wi*hi do --map
-	 beehive=beehive.."#"
-	 mines[i]=false
+	 new_cell(i)
 	end
 	mines[wi*hi]=false
-	
 	bees_left=bees or sz*2 --add bees to map
+	unopened=0 total_bees=bees_left
 	while bees_left>0 do
 	 local id=flr(rnd(wi*hi))
 	 if beehive[id]=="#" then
@@ -310,10 +343,9 @@ function new_hive(wi,hi,bees)
 	  bees_left-=1
 	 end
 	end
-	revealed={} --cells shown
-	reveal_que={} --cells to be shown
+	
 	for i=1,wi*hi do
-	 revealed[i]=false
+	 revealed[i]=false unopened+=1
 	end
 	parts={} --particles
 	flags={} --cells flagged
@@ -321,24 +353,14 @@ function new_hive(wi,hi,bees)
 	numbers={} --no. of adjacents
 	numbers=load_bees()
 	
-	--generate hive position on screen
-	hives_screen_pos={}
-	local x_os=64-(hive_wi*4)
-	local y_os=64-(hive_hi*4)
-	for i=0,hexs-1 do 
-  offset=0
-  y=flr(i/hive_wi)
-  if(y%2==1)offset=.5
- 	x=((i+offset)%hive_wi)
- 	
- 	add(hives_screen_pos,
- 	{x_os+(x*8),y_os+(y*7)})
- end
  for i=1,#players do
   players[i].id=flr((hexs/4)+(hexs/3)*(i/#players))
+  players[i].togo=players[i].id
  end
-  --first click should be free
- if(not menu.active)sfx(4)first_call=true
+ --first click should be free
+ if(not menu.active)sfx(4)
+ first_call=true
+ gamerunning=true
 end
 
 function _update60()
@@ -376,7 +398,7 @@ function _update60()
   if plr.togo~=plr.id then
    --todo:add a bounds check
    if plr.togo<1 and plr.togo>(hexs) then
-    plr.togo=plr.id
+    --plr.togo=plr.id
    end
    for j=1,#players do
     --if both plrs going to same spot
@@ -494,6 +516,10 @@ function _draw()cls()
   if revealed[i]and mines[i]==true then
    id=6
   end
+  if cell.act then
+   if(cell.act=="back")id=49
+   if(cell.act=="again")id=50
+  end
   local oy=0
   if cell.pressing then oy=1 end
   if cell.temp_press then oy=1cell.temp_press=nil end
@@ -565,7 +591,7 @@ function transpose(id,os)
  --get new position
  n_id+=id
  if (n_id>0 and 
- n_id<=hexs) then
+ n_id<=#beehive) then
   ty=((os=="tl"or os=="tr")and -1
   or((os=="bl"or os=="br")and 1
   or 0))+y_
@@ -594,12 +620,10 @@ function mark_hex(id,t)
  mark.lose_all=true
  hives_screen_pos[id].pressing=true
  mark.set=function(s)
-  local to_reveal=true
   --if cell isnt already revealed
-  if revealed[s.id]==false then
+  if not revealed[s.id] then
    --if cell has no bees near
-   if ((numbers[s.id] or 0)==0 and (flagfield[s.id]==nil)) and mines[s.id]==false then
-    to_reveal=true
+   if ((numbers[s.id] or 0)==0 and (flagfield[s.id]==nil)) and (not mines[s.id])then
     local m_adj=neighbours(s.id)
 	   for i=1,#m_adj do
 	    local n_id=m_adj[i]
@@ -616,28 +640,13 @@ function mark_hex(id,t)
 	    end
 	   end
    end
-   if mines[s.id] then
-    --touched a mine
-    if s.lose_all==true then
-    --lose condition
-    	sfx(3)
-     local offset=0
-     for j=1,#mines do
-     --mark all mines
-      if mines[j]==true and j~=s.id and revealed[j]==false then
-       offset+=1
-       local mark=mark_hex(j,offset)
-       --avoid recursion
-       mark.lose_all=false
-      end
-     end
-    end
-   end
-  end
-  --if to_reveal then
-	  revealed[s.id]=true
+   revealed[s.id]=true
+	  unopened-=1
 	  s.done=true sfx(2)
-	 --end
+	  if gamerunning then
+	   winlose(mines[s.id])
+	  end
+  end
 	 hives_screen_pos[s.id].pressing=nil
 	 del(reveal_que,s)
  end
@@ -718,6 +727,31 @@ function cprint(txt,x,y,c)
  print(txt,x+ox,y,c)
 end
 -->8
+function winlose(gameover)
+ if gameover then--unopened<(total_bees or 0) then
+  --lost
+ 	sfx(3) gamerunning=false
+  local offset=0
+  for j=1,#mines do
+  --mark all mines
+   if mines[j]==true and revealed[j]==false then
+    offset+=1
+    local mark=mark_hex(j,offset)
+    --avoid recursion
+    mark.lose_all=false
+   end
+  end
+ elseif unopened==total_bees then
+  --win
+  music(1) gamerunning=false
+ end
+ if not gamerunning then
+ 	--menu.active=true
+ 	new_cell().act="back"
+ 	new_cell().act="again"
+ end
+end
+
 function open_cell(i,plr)
 	if first_call then --first click is safe
   first_call=false sfx(12)
@@ -729,9 +763,17 @@ function open_cell(i,plr)
   sfx(13)
  end
  local check=mark_hex(i,5)
- check.t=0
+ check.t=0 
  if menu.active then
   menu.call(menu,i)
+ end
+ local cell=hives_screen_pos[i]
+ if cell.act=="back"then
+  menu:reset()--menu.call(menu,i)
+ end
+ if cell.act=="again"then
+  --menu:init()--menu.call(menu,i)
+  menu.call(menu)
  end
 end
 
@@ -799,7 +841,7 @@ function sprot(dx,dy,h,w,mx,my,rot)
  end
 end
 __gfx__
-00000000000900200001000000000000000000000009000000000000000000007777000000000000660000660000000000000000000000000000000000000000
+00000000000900000001000000000000000000000009000000000000000000007777000000000000660000660000000000000000000000000000000000000000
 0000000009f99900011111000a0a0a000070700009999900000100000d7d7000776600000000000060aaaa060000000000000000000000000000000000000000
 007007009f99999011111110a07070a07000007099f9f9900011110007d771000011aa00000000000a0aa0a00000000000000000000000000000000000000000
 0007700099999992111111100700070000aaa0009ff9ff92011010100d7d71000a11aa11000000000aaaaaa00000000000000000000000000000000000000000
@@ -823,14 +865,14 @@ __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000200900200009002000090000000900200009005020090020000000000000000000000000000000000000000000000000000000000000000000000000
-0000000009999900099999000999990009a9990009a9990009999900000000000000000000000000000000000000000000000000000000000000000000000000
-000000009999999099999990999999909a9999909a99999099797990000000000000000000000000000000000000000000000000000000000000000000000000
-00000000999999929999999299999992999999929999999297797792000000000000000000000000000000000000000000000000000000000000000000000000
-00000000999999929999999299999992999999929999999297797792000000000000000000000000000000000000000000000000000000000000000000000000
-00000000999999929999999299999992999999929999999299797992000000000000000000000000000000000000000000000000000000000000000000000000
-00000000099999250999992209999920099999220999992509999925000000000000000000000000000000000000000000000000000000000000000000000000
-00000000200925000009220000092000000922000009250020092500000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000600000006000000090000000900200009005020090020000000000000000000000000000000000000000000000000000000000000000000000000
+0000000006666600066666000999990009a9990009a9990009999900000000000000000000000000000000000000000000000000000000000000000000000000
+0000000066d6666066565660999999909a9999909a99999099797990000000000000000000000000000000000000000000000000000000000000000000000000
+00000000d555566d6666666d99999992999999929999999297797792000000000000000000000000000000000000000000000000000000000000000000000000
+000000006d56656d6656566d99999992999999929999999297797792000000000000000000000000000000000000000000000000000000000000000000000000
+000000006666666d66d5d66d99999992999999929999999299797992000000000000000000000000000000000000000000000000000000000000000000000000
+00000000066666dd066666dd09999920099999220999992509999925000000000000000000000000000000000000000000000000000000000000000000000000
+000000000006dd000006dd0000092000000922000009250020092500000000000000000000000000000000000000000000000000000000000000000000000000
 __label__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -979,8 +1021,8 @@ __sfx__
 9103000027140221401d1401714027120221201d1201712027110221101d110171100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 91020000136501b1100c6200365016120000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 9003000013610141200c6200362019020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-011000001e050160551b0501e0551d05014055190501d0551c05012054170551b0521c0521b052170521305512055000001205517050000001c0411c0511b0551705512050000000000000000000000000000000
-010e00001e1311e14016140161201b1301b1421e1551b1001d1511d130181521813019130191421d155161001c1501c1450010000100001000010000100001001c1501c135001001c1551c1551c1150010000100
+010800001e050160551b0501e0551d05014055190501d0551c05012054170551b0521c0521b052170521305512055000001205517050000001c0411c0511b0551705512050000000000000000000000000000000
+010e00001e1311e14016140161201b1301b1421e1551b1001d1511d130181521813019130191421d155120001c1501c1450010000100001000010000100001001c1501c135001001c1551c1551c1150010000100
 010e00000f150001001e1211e12016120161201b1201b12211150121001d1211d1201812018120191201912214150001001c1101c1150d1500010000100121001b1561b165121001216512166061520610012100
 010e00001605000000000000000000000000000000000000140500000000000000000000000000000000000017050000000000000000000000000000000000001605516045000001605516050000000000000000
 010e00000070000700007000070000700007000070000700007000070000700007000070000700007000070012770007000070000700007000070000700007001b7541b7501c7501b75019750197520070000700
