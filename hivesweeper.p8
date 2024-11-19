@@ -8,6 +8,7 @@ function _init()
  poke(0x5f2d, 1) --mouse mode
  debug=false--true
  unopened=0 total_bees=0
+ titlecards={}
  init_menu()
 end
 
@@ -15,6 +16,7 @@ end
 function init_menu()
 	menu={}menu.mode="menu"
 	menu.screen=0 menu.offset=0
+	menu.history={}
  --menu.tiles={"play","options"}
  menu.active=true
  menu.reset=function(s)
@@ -29,25 +31,32 @@ function init_menu()
   if s.screen==1 then
    s.tiles={"mouse (classic)","regular"}
   end
-  new_hive(1,#menu.tiles+8)
+  new_hive(1,#menu.tiles+3,2)
+  
+  --gamerunning=false
+  end_bits()
  end
  menu:init()
  menu.call=function(s,id)
-  s.mode=(id and s.tiles[id+s.offset])or s.mode
-  if(s.mode=="play")then
-  	menu.screen=1
-  	menu:init()
-  elseif(s.mode=="mouse (classic)")then
-  	menu.active=false
-  	set_plrs(0)
-   new_hive(15,10)
-  elseif(s.mode=="regular")then
-  	menu.active=false
-   new_hive(15,10)
-  end
-  if not gamerunning then
-   --s.offset=#beehive
-  end
+  if id and id>s.offset and id<=#s.tiles+s.offset then
+	  s.mode=(id and s.tiles[id+s.offset])or s.mode
+	  if(s.mode=="play")then
+	  	menu.screen=1
+	  	menu:init()
+	  elseif(s.mode=="mouse (classic)")then
+	  	menu.active=false
+	  	set_plrs(0)
+	   new_hive(10,10)
+	   new_titlecard("classic")
+	  elseif(s.mode=="regular")then
+	  	menu.active=false
+	   new_hive(15,10)
+	   new_titlecard("regular")
+	  end
+	  if not gamerunning then
+	   --s.offset=#beehive
+	  end
+	 end
  end
  menu.upd=function(s)
   
@@ -108,8 +117,9 @@ function sp_part(id,x,y,dx,dy,ang_change)
 end
 function set_flag(id,plr)
  fl={}fl.dying=false fl.from=plr
- fl.x=hives_screen_pos[id][1]
- fl.y=hives_screen_pos[id][2]
+ local cell=hives_screen_pos[id]
+ fl.x=cell[1]
+ fl.y=cell[2] --cell.temp_press=true
  fl.dx=0 fl.dy=0 fl.id=id
  sfx(9)
  if flagfield[fl.id]then
@@ -269,7 +279,8 @@ function set_plrs(ppl)
   	 flag_cell(s.id,s.pl)
   	end
   	
-  	if a_released then 
+  	if a_released then
+  	 perform_act(s.id)
 	   s.pressing=nil
 		  hives_screen_pos[s.id].pressing=nil 
 		 end
@@ -277,8 +288,10 @@ function set_plrs(ppl)
   	--update last non-zero horizontal input
  	 s.last_hin=s.hin~=0and s.hin or s.last_hin
 	 	s.prev_a=s.a
-	 	
-	 	s.id=min(s.id,#hives_screen_pos)
+	 	s:move()
+  end
+  plr.move=function(s)
+   s.id=min(s.id,#hives_screen_pos)
 	 	local cell=hives_screen_pos[s.id]
 	 	s.x+=((cell[1]+3)-s.x)*.35 //.4
 	 	s.y+=((cell[2]+3)-s.y)*.35 //.7
@@ -324,8 +337,8 @@ function new_hive(wi,hi,bees)
 	reveal_que={} --cells to be shown
 	--generate hive position on screen
 	hives_screen_pos={}
-	x_os=64-(hive_wi*4)
-	y_os=64-(hive_hi*4)
+	x_os=64-(hive_wi*4)-3
+	y_os=64-(hive_hi*4)+6
 	for i=0,hexs-1 do 
   --hex_pos(i,x_os,y_os)
  end
@@ -358,7 +371,7 @@ function new_hive(wi,hi,bees)
   players[i].togo=players[i].id
  end
  --first click should be free
- if(not menu.active)sfx(4)
+ --if(not menu.active)sfx(4)
  first_call=true
  gamerunning=true
 end
@@ -382,13 +395,16 @@ function _update60()
  end
  mreld=stat(34)==2
  b_released=(prm and not mreld)
- 
  --pm=stat(34)==1
  --prm=stat(34)==1
  --update plr inputs
  for i=1,#players do
   local plr=players[i]
-  plr:upd()
+  if #titlecards==0 then
+  	plr:upd()
+  else
+   plr:move()
+  end
  end
  --validate plr movements
  for i=1,#players do
@@ -425,7 +441,7 @@ function _update60()
  --if selecting then
   --hives_screen_pos[selecting].pressing=nil
  --end
-	  
+ if #titlecards==0 then
  for i=1,#hives_screen_pos do
   local cell=hives_screen_pos[i]
   --local mx=plr.x local my=plr.y
@@ -455,7 +471,6 @@ function _update60()
 	 	 --s.pressing=nil
 	 	 --hives_screen_pos[s.id].pressing=nil
 	 	--end
-	 	
   	if(a_released) and revealed[i]==false and flagfield[i]==nil then
  	  open_cell(i,nil)
   	elseif(a_released or mheld)and revealed[i]==true then
@@ -464,10 +479,12 @@ function _update60()
 	   flag_cell(i,nil)
    end
    if a_released then
+    perform_act(i)
  	  release_cell(i,nil)
  	 end
    break --dont want to select multiple at once
   end
+ end
  end
  --update flags
  for i=#flags,1,-1 do
@@ -495,6 +512,11 @@ function _update60()
 	   end
 	  end
 	 end
+ end
+ 
+ --draw titlecard
+ if #titlecards>0 then
+  titlecards[1]:upd()
  end
 end
 
@@ -569,6 +591,10 @@ function _draw()cls()
   plr:drw()
  end
  pal()
+ --draw titlecard
+ if #titlecards>0 then
+  titlecards[1]:drw()
+ end
 end
 
 function transpose(id,os)
@@ -747,9 +773,12 @@ function winlose(gameover)
  end
  if not gamerunning then
  	--menu.active=true
- 	new_cell().act="back"
- 	new_cell().act="again"
+ 	end_bits()
  end
+end
+function end_bits()
+	new_cell().act="back"
+	new_cell().act="again"
 end
 
 function open_cell(i,plr)
@@ -763,18 +792,7 @@ function open_cell(i,plr)
   sfx(13)
  end
  local check=mark_hex(i,5)
- check.t=0 
- if menu.active then
-  menu.call(menu,i)
- end
- local cell=hives_screen_pos[i]
- if cell.act=="back"then
-  menu:reset()--menu.call(menu,i)
- end
- if cell.act=="again"then
-  --menu:init()--menu.call(menu,i)
-  menu.call(menu)
- end
+ check.t=0
 end
 
 function chord_cell(i,perform)
@@ -818,10 +836,41 @@ function flag_cell(i,plr)
 end
 
 function release_cell(i,plr)
- if selecting then
-  hives_screen_pos[selecting].pressing=nil
+ if hives_screen_pos[i] then
+  hives_screen_pos[i].pressing=nil
  end
  selecting=nil
+end
+
+function perform_act(id)
+	if menu.active then
+  menu.call(menu,id)
+ end
+ local cell=hives_screen_pos[id]
+ if cell.act=="back"then
+  menu:reset()--menu.call(menu,i)
+ elseif cell.act=="again"then
+  --menu:init()--menu.call(menu,i)
+  menu.call(menu)
+ end
+end
+
+function new_titlecard(title)
+ cs={}cs.t=90cs.title=title or "h"
+ sfx(-1)
+ sfx(15,-1,0,16)
+ cs.upd=function(s)
+  s.t-=1
+  if s.t<=0 then
+   del(titlecards,s)sfx(4)
+  end
+ end
+ cs.drw=function(s)
+ 	ox=print("\#0"..s.title,0,-8)
+ 	print("\#0"..s.title,64-ox/2,64)
+ end
+ add(titlecards,cs)
+ return cs
 end
 -->8
 function sprot(dx,dy,h,w,mx,my,rot)
@@ -867,10 +916,10 @@ __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000600000006000000090000000900200009005020090020000000000000000000000000000000000000000000000000000000000000000000000000
 0000000006666600066666000999990009a9990009a9990009999900000000000000000000000000000000000000000000000000000000000000000000000000
-0000000066d6666066565660999999909a9999909a99999099797990000000000000000000000000000000000000000000000000000000000000000000000000
-00000000d555566d6666666d99999992999999929999999297797792000000000000000000000000000000000000000000000000000000000000000000000000
-000000006d56656d6656566d99999992999999929999999297797792000000000000000000000000000000000000000000000000000000000000000000000000
-000000006666666d66d5d66d99999992999999929999999299797992000000000000000000000000000000000000000000000000000000000000000000000000
+000000006656666066566560999999909a9999909a99999099797990000000000000000000000000000000000000000000000000000000000000000000000000
+000000006555566d6666666d99999992999999929999999297797792000000000000000000000000000000000000000000000000000000000000000000000000
+000000006656656d6656656d99999992999999929999999297797792000000000000000000000000000000000000000000000000000000000000000000000000
+000000006666666d6665566d99999992999999929999999299797992000000000000000000000000000000000000000000000000000000000000000000000000
 00000000066666dd066666dd09999920099999220999992509999925000000000000000000000000000000000000000000000000000000000000000000000000
 000000000006dd000006dd0000092000000922000009250020092500000000000000000000000000000000000000000000000000000000000000000000000000
 __label__
@@ -1021,7 +1070,7 @@ __sfx__
 9103000027140221401d1401714027120221201d1201712027110221101d110171100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 91020000136501b1100c6200365016120000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 9003000013610141200c6200362019020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-010800001e050160551b0501e0551d05014055190501d0551c05012054170551b0521c0521b052170521305512055000001205517050000001c0411c0511b0551705512050000000000000000000000000000000
+010a00001e050160551b0501e0551d05014055190501d0551c05012054170551b0521c0521b052170521305512055000001205517050000001c0411c0511b0551705512050000000000000000000000000000000
 010e00001e1311e14016140161201b1301b1421e1551b1001d1511d130181521813019130191421d155120001c1501c1450010000100001000010000100001001c1501c135001001c1551c1551c1150010000100
 010e00000f150001001e1211e12016120161201b1201b12211150121001d1211d1201812018120191201912214150001001c1101c1150d1500010000100121001b1561b165121001216512166061520610012100
 010e00001605000000000000000000000000000000000000140500000000000000000000000000000000000017050000000000000000000000000000000000001605516045000001605516050000000000000000
