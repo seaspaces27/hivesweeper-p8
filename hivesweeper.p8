@@ -342,7 +342,7 @@ function new_hive(wi,hi,bees)
 	end
 	mines[wi*hi]=false
 	all_bees=0
-	bees=bees or (hexs*.2)
+	bees=bees or flr(hexs*.2)
 	bees_left=min(bees,hexs-1) or sz*2 --add bees to map
 	unopened=0 total_bees=bees_left
 	while bees_left>0 do
