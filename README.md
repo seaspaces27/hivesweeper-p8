@@ -1,6 +1,6 @@
 # hivesweeper
 
-hivesweeper is a variation of the original minesweeper game, with the main difference being that it uses hexagons instead of square tiles
+hivesweeper is a variation of the original minesweeper game, with the main difference being that it uses hexagons instead of square tiles.
 
 ## installation
 
@@ -8,5 +8,5 @@ hivesweeper is a variation of the original minesweeper game, with the main diffe
 - if you do not have PICO-8, it is possible to use the [PICO-8 Education Edition](https://www.pico-8-edu.com/) instead and likewise drag the .p8 file into it.
 
 ## running
-- once loaded, type `run` into the console, or hit `ctrl+r` to start the program
-- press `esc` to return to the console, and again to explore the contents of the .p8 file itself
+- once loaded, type `run` into the console, or hit `ctrl+r` to start the program.
+- press `esc` to return to the console, and again to explore the contents of the .p8 file itself.
