@@ -9,6 +9,7 @@ function _init()
  debug=false--true
  unopened=0 total_bees=0
  titlecards={}
+ plrs={1,0,0,0,0,0,0,0}
  init_menu()
 end
 
@@ -31,12 +32,14 @@ function init_menu()
   if s.screen==1 then
    s.tiles={"mouse (classic)","regular"}
   end
-  new_hive(1,#menu.tiles+rnd(4))
+  new_hive(1,#menu.tiles+8,nil,
+  32,32)
   for i=1,#menu.tiles do
 	  hives_screen_pos[i].act=i
 	 end
+	 players[1].id=3
   --gamerunning=false
-  end_bits()
+  --end_bits()
  end
  menu:init()
  menu.call=function(s,id)
@@ -61,7 +64,23 @@ function init_menu()
 	 end
  end
  menu.upd=function(s)
-  
+  for p=0,8 do
+   for b=0,6 do
+    if btn(b,p) then
+     print(b, b*5 + 10, p*7, p+1)
+     if plrs[p+1]==0then
+      --input detected, plr join
+      plrs[p+1]=1
+      sfx(27,#players,
+      -2+#players*2,2)
+      
+      local np=add_plr(p+1)
+      np.id=3+p
+      add(players,np)
+     end
+    end
+   end
+  end
  end
  menu.drw=function(s)
   for i=1,#s.tiles do
@@ -70,6 +89,7 @@ function init_menu()
    print(s.tiles[i],
    cell[1]+ox,cell[2],7)
   end
+  sspr(8,32,8*12,8*2,16,8)
  end
 end
 
@@ -166,144 +186,7 @@ function rrnd(n)return(-n+rnd(n*2))end
 function set_plrs(ppl)
  players={}
  for i=1,ppl do
-  local plr={}
-  plr.id=1plr.pl=i-1plr.c=i plr.first_call=true
-  plr.cooldown=0
-  plr.x=64 plr.y=64
-  plr.hin=0plr.vin=0
-  plr.prev_hin=plr.hin
-  plr.prev_hin=plr.hin
-  plr.last_hin=plr.hin
-  plr.a=btn(🅾️,plr.pl)plr.b=0plr.ap=0plr.bp=0
-  plr.pressing=nil
-  plr.togo=plr.id
-  plr.prev_a=0
-  plr.upd=function(s)
-   --get controls
-   s.hin=tonum(btn(➡️,s.pl))-tonum(btn(⬅️,s.pl))
-   s.hinp=tonum(btnp(➡️,s.pl))-tonum(btnp(⬅️,s.pl))
-	  s.vin=tonum(btn(⬇️,s.pl))-tonum(btn(⬆️,s.pl))
-	  s.vinp=tonum(btnp(⬇️,s.pl))-tonum(btnp(⬆️,s.pl))
-	  s.prev_hin=s.hin
-	  s.prev_vin=s.vin
-	  plr.prev_a=s.a
-	  
-	  s.ap=btnp(🅾️,s.pl)and not s.prev_a s.bp=btnp(❎,s.pl)
-	  s.a=btn(🅾️,s.pl)s.b=btn(❎,s.pl)
-	  if s.ap then
-	   sfx(14)
-	  end
-	  local a_released=(s.prev_a and not s.a)
-	  if a_released then
-	   if s.pressing then
-	    hives_screen_pos[s.id].pressing=false
-	    s.pressing=nil
-	   end
-	  end
-	  if s.cooldown==0then --move speed
-	   local cl=8
-	  	local adj=neighbours(s.id)
-		 	if s.vin==1 then --down
-		 	 s.togo=transpose(s.id,
-			 	 (s.hin==1and "br")or
-			 	 (s.hin==-1and "bl")or
-			 	 (s.hin==0and
-			 	  (s.last_hin==1and "br")or
-			 	  (s.last_hin==-1and "bl")
-			 	))
-			 	--go to empty space
-			 	if transpose(s.id,"br")==nil then
-			 	 s.togo=transpose(s.id,"bl")
-			 	end 
-			 	if transpose(s.id,"bl")==nil then
-			 	 s.togo=transpose(s.id,"br")
-			 	end 
-			 	--s.cooldown=(s.togo~=s.id)and cl or s.cooldown
-		 	end
-		 	if s.vin==-1 then --up
-		 	 s.togo=transpose(s.id,
-			 	 (s.hin==1and "tr")or
-			 	 (s.hin==-1and "tl")or
-			 	 (s.hin==0and
-			 	  (s.last_hin==1and "tr")or
-			 	  (s.last_hin==-1and "tl")
-			 	))
-			 	--go to empty space
-			 	if transpose(s.id,"tr")==nil then
-			 	 s.togo=transpose(s.id,"tl")
-			 	end 
-			 	if transpose(s.id,"tl")==nil then
-			 	 s.togo=transpose(s.id,"tr")
-			 	end 
-			 	--s.cooldown=(s.togo~=s.id)and cl or s.cooldown
-		 	end
-		 	if s.vin==0then--left right
-		 	 s.togo=transpose(s.id,
-		 	  (s.hin==1and "r")or
-		 	  (s.hin==-1and"l")
-		 	 )
-		 	 --s.cooldown=(s.togo~=s.id)and cl or s.cooldown
-		 	end
-	 	else
-	 	 if(s.cooldown>=1)s.cooldown-=1
-	 	end
-	 	--set cell to pressed
-	 	if s.ap then
-	 	 hives_screen_pos[s.id].pressing=true
-	 	 s.pressing=s.id
-	 	end
-	 	if s.id~=s.togo then --moved
-	 	 local cl=8
-	 	 --s.pressing=nil
-	 	 if s.pressing then
-	 	  hives_screen_pos[s.pressing].pressing=nil
-	 	  s.pressing=s.togo
-	 	  if hives_screen_pos[s.togo]then
-	 	   hives_screen_pos[s.togo].pressing=true
-	 	  end
-	 	 end
-	 	 s.cooldown=(s.togo~=s.id)and cl or s.cooldown
-	 	end
-	 	
-	 	--interactions
-	 	if(a_released) and revealed[s.id]==false and flagfield[s.id]==nil then
-	 	 open_cell(s.id,s.pl)
- 	 elseif (s.a or a_released)and revealed[s.id]==true then--activate neighbours if flags-bee is met
-			 chord_cell(s.id,a_released)
-	 	elseif s.bp and revealed[s.id]==false then
-  	 flag_cell(s.id,s.pl)
-  	end
-  	
-  	if a_released then
-  	 perform_act(s.id)
-	   s.pressing=nil
-		  hives_screen_pos[s.id].pressing=nil 
-		 end
- 	 
-  	--update last non-zero horizontal input
- 	 s.last_hin=s.hin~=0and s.hin or s.last_hin
-	 	s.prev_a=s.a
-	 	s:move()
-  end
-  plr.move=function(s)
-   s.id=min(s.id,#hives_screen_pos)
-	 	local cell=hives_screen_pos[s.id]
-	 	s.x+=((cell[1]+3)-s.x)*.35 //.4
-	 	s.y+=((cell[2]+3)-s.y)*.35 //.7
-  end
-  plr.drw=function(s)
-   pal(6,cols[s.c])
-   pal(13,cols_shade[s.c])
-   local id=17
-   if(s.pressing~=nil)id=18
-   spr(id,s.x,s.y)
-   color(cols[s.c])
-   if s.first_call==true then
-    spr(33,s.x,s.y)
-   end
-   //print("\#2"..s.id.." "..s.cooldown)
-   //print("\#2"..s.hin.." "..s.vin)
-  end
+  local plr=add_plr(i)
   players[i]=plr
  end
 end
@@ -321,7 +204,7 @@ function hex_pos(i)
 	add(hives_screen_pos,
 	{x_os+(x*8),y_os+(y*7)})
 end
-function new_hive(wi,hi,bees)
+function new_hive(wi,hi,bees,x,y)
  mines={} sz=wi hi=hi or wi
 	beehive="" hive_size=sz
 	hive_wi=wi or 8
@@ -332,8 +215,8 @@ function new_hive(wi,hi,bees)
 	reveal_que={} --cells to be shown
 	--generate hive position on screen
 	hives_screen_pos={}
-	x_os=64-(hive_wi*4)-3
-	y_os=64-(hive_hi*4)+6
+	x_os=x or 64-(hive_wi*4)-3
+	y_os=y or 64-(hive_hi*4)+6
 	for i=0,hexs-1 do 
   --hex_pos(i,x_os,y_os)
  end
@@ -667,7 +550,8 @@ function mark_hex(id,t)
     local m_adj=neighbours(s.id)
 	   for i=1,#m_adj do
 	    local n_id=m_adj[i]
-	    if revealed[n_id]==false and (flagfield[n_id]==nil or flagfield[n_id]==0) then
+	    --not_unique=hives_screen_pos[id].act
+	    if revealed[n_id]==false and (flagfield[n_id]==nil or flagfield[n_id]==0)then
 	     --put new mark for cell 
 	     --on que, inherit stats
 	     local new_mark=mark_hex(n_id,s.full_t)
@@ -948,6 +832,150 @@ function ui_draw()color(7)
  not t_end and t_start and((flr(1+time()-t_start)%4)*4)or 0
  sspr(0,16+to,5,5,128-l-6,ty)
 end
+-->8
+--player code
+
+function add_plr(i)
+	local plr={}
+	plr.id=1plr.pl=i-1plr.c=i plr.first_call=true
+	plr.cooldown=0
+	plr.x=64 plr.y=64
+	plr.hin=0plr.vin=0
+	plr.prev_hin=plr.hin
+	plr.prev_hin=plr.hin
+	plr.last_hin=plr.hin
+	plr.a=btn(🅾️,plr.pl)plr.b=0plr.ap=0plr.bp=0
+	plr.pressing=nil
+	plr.togo=plr.id
+	plr.prev_a=0
+	plr.upd=function(s)
+	 --get controls
+	 s.hin=tonum(btn(➡️,s.pl))-tonum(btn(⬅️,s.pl))
+	 s.hinp=tonum(btnp(➡️,s.pl))-tonum(btnp(⬅️,s.pl))
+	 s.vin=tonum(btn(⬇️,s.pl))-tonum(btn(⬆️,s.pl))
+	 s.vinp=tonum(btnp(⬇️,s.pl))-tonum(btnp(⬆️,s.pl))
+	 s.prev_hin=s.hin
+	 s.prev_vin=s.vin
+	 plr.prev_a=s.a
+	 
+	 s.ap=btnp(🅾️,s.pl)and not s.prev_a s.bp=btnp(❎,s.pl)
+	 s.a=btn(🅾️,s.pl)s.b=btn(❎,s.pl)
+	 if s.ap then
+	  sfx(14)
+	 end
+	 local a_released=(s.prev_a and not s.a)
+	 if a_released then
+	  if s.pressing then
+	   hives_screen_pos[s.id].pressing=false
+	   s.pressing=nil
+	  end
+	 end
+	 if s.cooldown==0then --move speed
+	  local cl=8
+	 	local adj=neighbours(s.id)
+	 	if s.vin==1 then --down
+	 	 s.togo=transpose(s.id,
+		 	 (s.hin==1and "br")or
+		 	 (s.hin==-1and "bl")or
+		 	 (s.hin==0and
+		 	  (s.last_hin==1and "br")or
+		 	  (s.last_hin==-1and "bl")
+		 	))
+		 	--go to empty space
+		 	if transpose(s.id,"br")==nil then
+		 	 s.togo=transpose(s.id,"bl")
+		 	end 
+		 	if transpose(s.id,"bl")==nil then
+		 	 s.togo=transpose(s.id,"br")
+		 	end 
+		 	--s.cooldown=(s.togo~=s.id)and cl or s.cooldown
+	 	end
+	 	if s.vin==-1 then --up
+	 	 s.togo=transpose(s.id,
+		 	 (s.hin==1and "tr")or
+		 	 (s.hin==-1and "tl")or
+		 	 (s.hin==0and
+		 	  (s.last_hin==1and "tr")or
+		 	  (s.last_hin==-1and "tl")
+		 	))
+		 	--go to empty space
+		 	if transpose(s.id,"tr")==nil then
+		 	 s.togo=transpose(s.id,"tl")
+		 	end 
+		 	if transpose(s.id,"tl")==nil then
+		 	 s.togo=transpose(s.id,"tr")
+		 	end 
+		 	--s.cooldown=(s.togo~=s.id)and cl or s.cooldown
+	 	end
+	 	if s.vin==0then--left right
+	 	 s.togo=transpose(s.id,
+	 	  (s.hin==1and "r")or
+	 	  (s.hin==-1and"l")
+	 	 )
+	 	 --s.cooldown=(s.togo~=s.id)and cl or s.cooldown
+	 	end
+		else
+		 if(s.cooldown>=1)s.cooldown-=1
+		end
+		--set cell to pressed
+		if s.ap then
+		 hives_screen_pos[s.id].pressing=true
+		 s.pressing=s.id
+		end
+		if s.id~=s.togo then --moved
+		 local cl=8
+		 --s.pressing=nil
+		 if s.pressing then
+		  hives_screen_pos[s.pressing].pressing=nil
+		  s.pressing=s.togo
+		  if hives_screen_pos[s.togo]then
+		   hives_screen_pos[s.togo].pressing=true
+		  end
+		 end
+		 s.cooldown=(s.togo~=s.id)and cl or s.cooldown
+		end
+		
+		--interactions
+		if(a_released) and revealed[s.id]==false and flagfield[s.id]==nil then
+		 open_cell(s.id,s.pl)
+	 elseif (s.a or a_released)and revealed[s.id]==true then--activate neighbours if flags-bee is met
+		 chord_cell(s.id,a_released)
+		elseif s.bp and revealed[s.id]==false then
+		 flag_cell(s.id,s.pl)
+		end
+		
+		if a_released then
+		 perform_act(s.id)
+	  s.pressing=nil
+	  hives_screen_pos[s.id].pressing=nil 
+	 end
+	 
+		--update last non-zero horizontal input
+	 s.last_hin=s.hin~=0and s.hin or s.last_hin
+		s.prev_a=s.a
+		s:move()
+	end
+	plr.move=function(s)
+	 s.id=min(s.id,#hives_screen_pos)
+		local cell=hives_screen_pos[s.id]
+		s.x+=((cell[1]+3)-s.x)*.35 //.4
+		s.y+=((cell[2]+3)-s.y)*.35 //.7
+	end
+	plr.drw=function(s)
+	 pal(6,cols[s.c])
+	 pal(13,cols_shade[s.c])
+	 local id=17
+	 if(s.pressing~=nil)id=18
+	 spr(id,s.x,s.y)
+	 color(cols[s.c])
+	 if s.first_call==true then
+	  spr(33,s.x,s.y)
+	 end
+	 //print("\#2"..s.id.." "..s.cooldown)
+	 //print("\#2"..s.hin.." "..s.vin)
+	end
+	return plr
+end
 __gfx__
 00000000000900000001000000000000000000000009000000000000000000007777000000000000000000000000000000000000000000000000000000000000
 0000000009f9990001111100000000000070700009999900000100000d6d60007766000000aaaa00000000000000000000000000005005000000000000000000
@@ -981,7 +1009,22 @@ __gfx__
 66d660006666666d6665566d99999992999999929999999299797992000000000000000000000000000000000000000000000000000000000000000000000000
 66d66000066666dd066666dd09999920099999220999992509999925000000000000000000000000000000000000000000000000000000000000000000000000
 666660000006dd000006dd0000092000000922000009250020092500000000000000000000000000000000000000000000000000000000000000000000000000
-06660000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+06660000111111000001111111111111111111111111111111111111111111111111111111111111111111111111111111111111000000000000000000000000
+00000000111111099901111111111111111111111111111111111111111111111111111111111100000111111111111111111111000000000000000000000000
+00000000111110999901111110011111111111111111111111111111111111111111111111111099990111111111111111111111000000000000000000000000
+00000000111110909901111109911111111111111111111111111111111111111111111111110999990111100111111111111111000000000000000000000000
+00000000111110299201111099911111111000110001100011111111100111000001110000010990990110099011110011111111000000000000000000000000
+00000000111110099011111099911000111990109990099901110001090110999901109999009900990109999900009901111111000000000000000000000000
+00000000111110292011111000000990111990099990999990010901090109999901099999009900990099909900999900001111000000000000000000000000
+00000000111110990111111111199990111990990990990990900901090099009900990099009909990099009900999999901111000000000000000000000000
+00000000111100940990110999099090109900900990999010900900990090009900900099009909990999099010990099901111000000000000000000000000
+00000000111109499999009999000090109009909990099900900900990990999909909999009999900999990110990100001111000000000000000000000000
+00000000111109990299010099011099099109999901099990900990901999999009999990109999010990001110990111111111000000000000000000000000
+00000000111109920099010990111099090109000010000990999990901900000009000000109900110990110010990111111111000000000000000000000000
+00000000111099901099010990111099990109000909900990999099901900009009000090109901110999009909990111111111000000000000000000000000
+00000000111099200990009990111099901109999909999990999099901999999009999990109901111099999909901111111111000000000000000000000000
+00000000111099010999009901111099011110999010999900090099011099990110999901199901111109999019901111111111000000000000000000000000
+00000000111000010000100011111000111111000110000011101100111100000110000011199011111110000110011111111111000000000000000000000000
 __label__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -1121,7 +1164,7 @@ __sfx__
 040100000d110251102b110131201c12015120161200b11016110141101311012120121201213012140121301213015140161401a1401b1401a140191401a1401a1401c1401c1401a14017120151201413012140
 01020000200102201023020230202303006040060501d050130300d03000000000000000000000000000c0300e040170501a05018050140500e0300d02000000220502205012050120500a0500a0500a05000000
 010600001301500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000700000e01500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010700000e01500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 010700001501500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 010700001001500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 000200001613019620116101e12006610201100261004620046200d60000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600
@@ -1142,7 +1185,7 @@ __sfx__
 011e00001355416555165541b5551855012555115520f5551355416555165541b555185500050000500005001355416555165541b5551855012555115520f55518555005000e555005000f555005000050000500
 011e00001355416555165541b5551855012555115520f5551355416555165541b555185500050000500005001e554165551b5541e5551d55018555195521d5551c55500500165550050017555005000050000500
 010c0000120501205012050150501205012050120501505000000000000c010100101805718057180501c0501805018050180501c0500000000000000001a0500000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010e0000171401f15519140211551a140231551c140251551d150261551f1502816521160291750000000000171551c155151551a15513155181551d155000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
