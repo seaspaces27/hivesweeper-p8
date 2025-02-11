@@ -252,9 +252,10 @@ function new_hive(wi,hi,bees,x,y)
 	numbers={} --no. of adjacents
 	numbers=load_bees()
 	
- for i=1,#players do
-  players[i].id=flr((hexs/4)+(hexs/3)*(i/#players))
-  players[i].togo=players[i].id
+ for i,v in pairs(players) do
+  v.id=flr((hexs/4)+(hexs/3)*(i/#players))
+  v.togo=v.id
+  v.clicks=0
  end
  --first click should be free
  --if(not menu.active)sfx(4)
@@ -319,16 +320,11 @@ function _update60()
  for i=1,#players do
   plr=players[i]
   if(plr.id~=plr.togo)then
-   if plr.powerups["noflag"]then
-   if plr.powerups["noflag"]>0then
-    plr.powerups["noflag"]-=1
-   end
-   end
    move_sfx=true
    plr.id=plr.togo
   end
  end
- if(move_sfx)sfx(5+rnd(4))
+ if(move_sfx and #players<=2)sfx(5+rnd(4))
  
  --hive interaction
  --selecting=nil
@@ -796,6 +792,8 @@ function new_titlecard(title)
  return cs
 end
 -->8
+--ui + misc
+
 function sprot(dx,dy,h,w,mx,my,rot)
  --dx the x position of the sprite
  --dy the y position of the sprite
@@ -824,8 +822,21 @@ function ui_draw()color(7)
  str=all_bees
  local tx=1 ty=1
 	sspr(4,8,3,5,tx,ty)tx+=4
-	print(all_bees-#flags,tx,ty)
-	
+	local ox=print(all_bees-#flags,tx,ty)
+	ox+=2
+	local length=72
+	for i,p in pairs(players) do
+	 //local ox=0+(i/#players)*72
+	 --local ox=8+i*12
+	 if(i==5)ox=0 ty+=8
+	 local ol=0
+	 pal(6,cols[p.c])
+	 pal(13,cols_shade[p.c])
+	 spr(17,ox,ty)
+	 pal()
+	 ol=print(p.clicks,ox+6,ty)
+	 ox=ol
+	end
 	--print(flag_icon..all_bees-#flags)
  //if  then ct=(start and flr(time())-start) or "0:00"
  //else ct=game_length or"0:00"end
@@ -856,7 +867,8 @@ function add_plr(i)
 	plr.togo=plr.id
 	plr.prev_a=0
 	plr.powerups={}
-	plr.powerups["noflag"]=8
+	plr.powerups["noflag"]=-1
+	plr.clicks=0
 	plr.upd=function(s)
 	 --get controls
 	 s.hin=tonum(btn(➡️,s.pl))-tonum(btn(⬅️,s.pl))
@@ -932,10 +944,10 @@ function add_plr(i)
 		 s.pressing=s.id
 		end
 		if s.id~=s.togo then --moved
-		 local cl=8
+		 local cl=10
 		 if s.powerups["noflag"]then
-		  if s.powerups["noflag"]==0then
-		   cl=6
+		  if s.powerups["noflag"]==0 or s.powerups["noflag"]==-1 then
+		   cl=8
 		  end
 		 end
 		 --s.pressing=nil
@@ -951,13 +963,18 @@ function add_plr(i)
 		
 		--interactions
 		if(a_released) and revealed[s.id]==false and flagfield[s.id]==nil then
-		 open_cell(s.id,s.pl)
+		 open_cell(s.id,s.pl) s.clicks+=1
+		 if s.powerups["noflag"]then
+		 if s.powerups["noflag"]>0then
+		  s.powerups["noflag"]-=1
+		 end
+		 end
 	 elseif (s.a or a_released)and revealed[s.id]==true then--activate neighbours if flags-bee is met
 		 chord_cell(s.id,a_released)
 		elseif s.bp and revealed[s.id]==false then
 		 flag_cell(s.id,s.pl)
 		 if s.powerups["noflag"]then
-		  s.powerups["noflag"]=16
+		  s.powerups["noflag"]=8
 		 end
 		end
 		
@@ -985,7 +1002,7 @@ function add_plr(i)
 	 if(s.pressing~=nil)id=18
 	 spr(id,s.x,s.y)
 	 color(cols[s.c])
-	 if s.first_call==true then
+	 if s.first_call==true or first_call then
 	  spr(33,s.x,s.y)
 	 end
 	 //print("\#2"..s.id.." "..s.cooldown)
