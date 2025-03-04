@@ -3,8 +3,6 @@ version 42
 __lua__
 function _init()
  set_plrs(1)
- //new_hive(15,10)
- //new_hive(1,10)
  poke(0x5f2d, 1) --mouse mode
  debug=false--true
  unopened=0 total_bees=0
@@ -12,7 +10,6 @@ function _init()
  plrs={1,0,0,0,0,0,0,0}
  init_menu()
 end
-
 
 function init_menu()
 	menu={}menu.mode="menu"
@@ -27,7 +24,7 @@ function init_menu()
  end
  menu.init=function(s)
   if s.screen==0 then
-   s.tiles={"play","options"}
+   s.tiles={"play","options","tutorial"}
   end
   if s.screen==1 then
    s.tiles={"mouse (classic)","regular"}
@@ -40,6 +37,41 @@ function init_menu()
 	 players[1].id=3
   --gamerunning=false
   --end_bits()
+ end
+ menu.tut=function(s)
+  new_hive(3,3,0)
+  hidden[1]=true
+  hidden[7]=true
+  players[1].no_inp=true
+  players[1].togo=1
+  players[1].id=1
+  s.tut_frame=0
+  numbers[5]=1
+ end
+ menu.updtut=function(s)
+  s.tut_frame+=1
+  if s.tut_frame==60 then
+   //players[1].hin=1
+   players[1].id=2
+   sfx(5)
+  end
+  if s.tut_frame==80 then
+   //players[1].hin=1
+   players[1].id=5
+   sfx(7)
+  end
+  if s.tut_frame==90 then
+   players[1].a=true
+  end
+  if s.tut_frame==100 then
+   players[1].a=false
+   music(2)
+  end
+  if s.tut_frame==110 then
+   players[1].id=8
+   music(2)
+  end
+  --players[1].hin=1
  end
  menu:init()
  menu.call=function(s,id)
@@ -57,6 +89,8 @@ function init_menu()
 	  	menu.active=false
 	   new_hive(15,10)
 	   new_titlecard("regular")
+	  elseif(s.mode=="tutorial")then
+	   s:tut()
 	  end
 	  if not gamerunning then
 	   --s.offset=#beehive
@@ -64,9 +98,18 @@ function init_menu()
 	 end
  end
  menu.upd=function(s)
-  for p=0,8 do
+  if s.mode=="tutorial"then
+   s:updtut()
+  end
+  for p=0,8 do --join
    for b=0,6 do
-    if btn(b,p) then
+    if btnp(b,p) then
+     if s.mode=="tutorial"then
+      s.mode="menu"
+      menu.screen=0 music(-1)
+	  	  menu:init()
+      break
+     end
      print(b, b*5 + 10, p*7, p+1)
      if plrs[p+1]==0then
       --input detected, plr join
@@ -83,11 +126,13 @@ function init_menu()
   end
  end
  menu.drw=function(s)
+  if s.mode~="tutorial"then
   for i=1,#s.tiles do
    local ox=9
    local cell=hives_screen_pos[i]
    print(s.tiles[i],
    cell[1]+ox,cell[2],7)
+  end
   end
   //pal(1,0)
   palt(1,1)
@@ -214,6 +259,7 @@ function new_hive(wi,hi,bees,x,y)
 	hive_hi=hi or wi
 	hexs=wi*hi
 	
+	hidden={} -- hidden cells
 	revealed={} --cells shown
 	reveal_que={} --cells to be shown
 	--generate hive position on screen
@@ -428,6 +474,9 @@ function _draw()cls()
   if revealed[i]==true then
    id=2
   end
+  if hidden[i]==true then
+   id=3
+  end
   --if debug
   if debug and beehive[i]=="b"then
    id=5
@@ -438,14 +487,12 @@ function _draw()cls()
   if cell.act then
    if(cell.act=="back")id=49
    if(cell.act=="again")id=50
+   pal(1,5)
+   pal(9,6)pal(2,13)pal(15,6)
   end
   local oy=0
   if cell.pressing then oy=1 end
   if cell.temp_press then oy=1cell.temp_press=nil end
-  if cell.act then
-  	pal(1,5)
-   pal(9,6)pal(2,13)pal(15,6)
-  end
   spr(id,cell[1],cell[2]+oy)pal()
   
   if debug or revealed[i]then
@@ -866,6 +913,7 @@ function add_plr(i)
 	plr.prev_hin=plr.hin
 	plr.last_hin=plr.hin
 	plr.a=btn(🅾️,plr.pl)plr.b=0plr.ap=0plr.bp=0
+	plr.no_inp=false
 	plr.pressing=nil
 	plr.togo=plr.id
 	plr.prev_a=0
@@ -874,18 +922,20 @@ function add_plr(i)
 	plr.clicks=0
 	plr.upd=function(s)
 	 --get controls
-	 s.hin=tonum(btn(➡️,s.pl))-tonum(btn(⬅️,s.pl))
-	 s.hinp=tonum(btnp(➡️,s.pl))-tonum(btnp(⬅️,s.pl))
-	 s.vin=tonum(btn(⬇️,s.pl))-tonum(btn(⬆️,s.pl))
-	 s.vinp=tonum(btnp(⬇️,s.pl))-tonum(btnp(⬆️,s.pl))
-	 s.prev_hin=s.hin
-	 s.prev_vin=s.vin
-	 plr.prev_a=s.a
+	 if not s.no_inp then
+		 s.hin=tonum(btn(➡️,s.pl))-tonum(btn(⬅️,s.pl))
+		 s.hinp=tonum(btnp(➡️,s.pl))-tonum(btnp(⬅️,s.pl))
+		 s.vin=tonum(btn(⬇️,s.pl))-tonum(btn(⬆️,s.pl))
+		 s.vinp=tonum(btnp(⬇️,s.pl))-tonum(btnp(⬆️,s.pl))
+		 s.prev_hin=s.hin
+		 s.prev_vin=s.vin
+		 plr.prev_a=s.a
 	 
-	 s.ap=btnp(🅾️,s.pl)and not s.prev_a s.bp=btnp(❎,s.pl)
-	 s.a=btn(🅾️,s.pl)s.b=btn(❎,s.pl)
-	 if s.ap then
-	  sfx(14)
+		 s.ap=btnp(🅾️,s.pl)and not s.prev_a s.bp=btnp(❎,s.pl)
+		 s.a=btn(🅾️,s.pl)s.b=btn(❎,s.pl)
+		 if s.ap then
+		  sfx(14)
+		 end
 	 end
 	 local a_released=(s.prev_a and not s.a)
 	 if a_released then
@@ -1230,9 +1280,9 @@ __sfx__
 011000000b050000001b0501e055000002005506050000001b0501e055000002005523051000000000020050080001e0001e056080001b055000000000006055040500000020050230550b000250452505604000
 01100000230501f055000001e0551705000000000000000000000120500d05500000000001205500005000000b050000001b0501e055000002005506050000001b0501e055000002005523051080000000020050
 0110000021050200501e056080001b055000000000006055040500000020050230550b000250452505604000270502305500005250501505500000000000e05500000000000f0550000000000160550000000000
-011000002505025055230502505500000000002305500000000001405500000000002505025055230502505512050000002305500000000001405500000000000000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+011000002505025055230502505500000000002305500000000001405500000000002505025055230502505512050000002305500000000001405500000000002305000000000002205000000000002005521050
+010f0000200501e055000001e0550605000000000000c05000000000000b050000001b0501e055000002005523051060002505423055000001e0542805028052270550000023050000001e050000000000023050
+010f00000000000000000000000000000000000000000000000000000000000000000000003050000000000004050000000000005050000000000008050000000d0500d0550805014000190361c036220351b050
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -1266,4 +1316,5 @@ __music__
 00 21424344
 00 22424344
 00 23424344
+00 24254344
 
