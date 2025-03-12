@@ -173,13 +173,40 @@ num_cols={12,11,8,12,14,13,5}
 --cols_shade={4,2,9,3,5,5,4,4,13,6}
 cols={7,6,13,5}
 cols_shade={6,1,5,1}
-function sp_part(id,x,y,dx,dy,ang_change)
+function part(id,x,y,t)
  pa={}pa.tag=nil pa.id=id or 0
- pa.ang_change=ang_change pa.recol={}
  pa.x=x or 64 pa.y=y or 64
+ pa.t=t or -1 pa.flicker=nil
+ pa.recol={}
+ pa.upd=function(s)
+  s.t-=1
+  if s.t<=0 then
+   del(parts,s)
+  end
+ end
+ pa.drw=function(s)
+  if s.flicker then
+   if s.t%s.flicker<(min(s.flicker,4))then
+    return
+   end
+  end
+  if s.recol then
+   for i=1,#s.recol do
+    pal(s.recol[i][1],s.recol[i][2])
+   end
+  end
+  spr(s.id,s.x,s.y)
+  pal()
+ end
+ add(parts,pa)
+ return pa
+end
+function sp_part(id,x,y,dx,dy,ang_change,t)
+ pa=part(id,x,y)pa.t=t or pa.t
+ pa.ang_change=ang_change
  pa.dx=dx or rnd(4)-8 pa.dy=dy or rnd(1)
- pa.gx=.94 pa.gy=.1
- pa.ang=0 pa.t=-1
+ pa.gx=.94 pa.gy=.1 
+ pa.ang=0
  pa.upd=function(s)
   s.t-=1
   s.x+=s.dx s.y+=s.dy
@@ -190,6 +217,11 @@ function sp_part(id,x,y,dx,dy,ang_change)
   end
  end
  pa.drw=function(s)
+  if s.flicker then
+   if s.t%s.flicker*2<(min(s.flicker,4))then
+    return
+   end
+  end
   if s.recol then
    for i=1,#s.recol do
     pal(s.recol[i][1],s.recol[i][2])
@@ -206,7 +238,6 @@ function sp_part(id,x,y,dx,dy,ang_change)
   end
   pal()
  end
- add(parts,pa)
  return pa
 end
 function set_flag(id,plr)
@@ -643,7 +674,7 @@ function mark_hex(id,t,plr)
 	  end
 	  if gamerunning then
 	   local lost=mines[s.id]
-	   if lost and plr.powerups["bubble"]then
+	   if lost and (plr and plr.powerups["bubble"])then
 	    lost=false
 	    plr.powerups["bubble"]=0
 	   end
@@ -752,7 +783,7 @@ function timer_start()
 end
 function timer_end()
  t_end=time()
- game_length=t_end-t_start
+ game_length=t_end-(t_start or t_end)
 end
 
 function shake_cells(amt,frames)
@@ -859,11 +890,15 @@ function open_cell(i,plr)
  else
   sfx(13)
  end
- local check=mark_hex(i,5,plr)
+ local dur=5
+ if plr and plr.powerups["broom"]then
+  dur=0
+ end
+ local check=mark_hex(i,dur,plr)
  check.t=0
 end
 
-function chord_cell(i,perform)
+function chord_cell(i,perform,plr)
  local adj=neighbours(i)
  local nonflags={}
  local flags_near=0
@@ -877,7 +912,7 @@ function chord_cell(i,perform)
  if flags_near==numbers[i]then
 	 for j=1,#nonflags do
 		 if perform then
-		 	open_cell(nonflags[j],0)
+		 	open_cell(nonflags[j],plr)
 	  else --sfx(3)
 	 		hives_screen_pos[nonflags[j]].temp_press=true
 	 	end
@@ -1192,13 +1227,13 @@ default_tile="\ai0x5"
 footsteps={"g1","d1","a1","e1"}
 
 function add_plr(i)
-	local plr={}
-	plr.id=1plr.pl=i-1plr.c=i plr.first_call=true
-	plr.cooldown=0
+	local plr=add_obj(1) plr.class="plr"
 	plr.x=64 plr.y=64
+	plr.pl=i-1plr.c=i
+	plr.first_call=true
+	plr.cooldown=0
 	plr.side=ceil(rnd(1))==1 and true
 	plr.hin=0plr.vin=0
-	plr.prev_hin=plr.hin
 	plr.prev_hin=plr.hin
 	plr.last_hin=plr.hin
 	plr.a=btn(🅾️,plr.pl)plr.b=0plr.ap=0plr.bp=0
@@ -1206,7 +1241,6 @@ function add_plr(i)
 	plr.pressing=nil
 	plr.togo=plr.id
 	plr.prev_a=0
-	plr.powerups={}
 	plr.powerups["noflag"]=-1
 	plr.clicks=0
 	plr.upd=function(s)
@@ -1310,13 +1344,35 @@ function add_plr(i)
 		--interactions
 		if(a_released) and revealed[s.id]==false and flagfield[s.id]==nil then
 		 open_cell(s.id,s) s.clicks+=1
+		 
+		 if s.powerups["broom"]then
+			 s.powerups["broom"]-=1
+		  print("\ai6c1")
+		  if(s.powerups["broom"]==0)then
+		   s.powerups["broom"]=nil
+		   sp_part(28,s.x,s.y,
+		   .3,-1,false,60)
+		  end
+	  end
+	  
 		 if s.powerups["noflag"]then
-		 if s.powerups["noflag"]>0then
-		  s.powerups["noflag"]-=1
-		 end
+			 if s.powerups["noflag"]>0then
+			  s.powerups["noflag"]-=1
+			 end
 		 end
 	 elseif (s.a or a_released)and revealed[s.id]==true then--activate neighbours if flags-bee is met
-		 chord_cell(s.id,a_released)
+		 chord_cell(s.id,a_released,s)
+		 
+		 if a_released and s.powerups["broom"]then
+			 s.powerups["broom"]-=1
+		  print("\ai6c1")
+		  if(s.powerups["broom"]==0)then
+		   s.powerups["broom"]=nil
+		   sp_part(28,s.x,s.y,
+		   .3,-1,false,60)
+		  end
+	  end
+	  
 		elseif s.bp and revealed[s.id]==false then
 		 flag_cell(s.id,s.pl)
 		 if s.powerups["noflag"]then
@@ -1355,6 +1411,14 @@ function add_plr(i)
 	 //print("\#2"..s.id.." "..s.cooldown)
 	 //print("\#2"..s.hin.." "..s.vin)
 	end
+	plr.die=function(s)
+	 if s.powerups["bubble"]then
+   s.powerups["bubble"]=nil
+   sfx(6,-1,3,2)
+   return
+  end
+	 winlose(true)
+	end
 	return plr
 end
 -->8
@@ -1383,23 +1447,43 @@ function check_enemies(e)
 	end
 	return found
 end
+function check_players(e)
+ local found=false
+	for p in all(players)do
+	 if p~=e then
+	  if p.id==e.id then
+	   p:die() found=true
+	  end
+	 end
+	end
+	return found
+end
 
 function get_powerup(e,name)
  //e.powerups[name]=true
  if name=="bubble"then
-  e.powerups["bubble"]=60*10
+  e.powerups["bubble"]=-1--60*10
+ end
+ if name=="broom"then
+  e.powerups["broom"]=6
  end
 end
 function drw_powerups(e)
  if e.powerups["bubble"]~=nil then
   spr(27,e.x-2,e.y)
  end
+ if e.powerups["broom"]~=nil then
+  spr(28,e.x,e.y+2,1,1,
+  e.powerups["broom"]%2==0 and true or false)
+ end
 end
 
 function add_obj(id)
  local e={}e.id=id e.togo=e.id
- e.x=hives_screen_pos[e.id][1]
- e.y=hives_screen_pos[e.id][2]
+ if hives_screen_pos then
+  e.x=hives_screen_pos[e.id][1]
+  e.y=hives_screen_pos[e.id][2]
+ end
  e.t=0 e.powerups={}
  e.move=function(s)
   if s.id then
@@ -1424,9 +1508,21 @@ function add_obj(id)
    
    local corpse=sp_part(sp,s.x,s.y,
    rrnd(1.5),-1.5,false)
-   corpse.recol={{11,8}}
+   --corpse.recol={{11,8}}
+   
+   corpse.flicker=5
+   corpse.t=30
+   
+   if s.class=="powerup"then
+    corpse.t=5
+    corpse.gx=0 corpse.gy=0
+    corpse.dx=0 corpse.dy=0
+    if s.name=="bubble"then
+     corpse.id=40
+    end
+   end
   end
-  del(ents,e)
+  if(s.class~="plr")del(ents,e)
  end
  return e
 end
@@ -1447,6 +1543,21 @@ function add_bubble(id)
  end
  e.drw=function(s)
   spr(27,s.x,s.y+sin(s.t/90))
+ end
+ e.got=function(s)
+  sfx(5)
+  s:die()
+ end
+ return e
+end
+
+function add_broom(id)
+ local e=add_powerup(id,"broom")
+ e.upd=function(s)
+  e.t+=1
+ end
+ e.drw=function(s)
+  spr(28,s.x,s.y+sin(s.t/90))
  end
  e.got=function(s)
   sfx(5)
@@ -1476,7 +1587,10 @@ function add_hopper(id)
 	   s.t=0 sfx(6,0,1,1)
 	   s.id=s.togo s.hopped_from=s.id
 	   check_powerups(s)
-	   if(check_enemies(e))s.t=86
+	   if check_enemies(e)
+	   or check_players(e)then
+	    s.t=revealed[s.id]and 236 or 86 
+	   end
 	  end
 	 end
 	end
@@ -1522,22 +1636,22 @@ __gfx__
 007007009999999210111110000100000000000099f9f99201101010000666000a11aa110aaaaaa0000550000005500000500500000550000000000000000000
 00000000099999220111110000000000070007000999992500111100000022200011aa0000aaaa00000000000000000000000000000000000000000000000000
 00000000000922000001000000000000000700000009250000010000000000000000000000000000000000000000000000000000000000000000000000000000
-60006d60600000006d00000000040000000000000000000000010000000000000077770020000002878787870077770000000000000000000000000000000000
-6600d6d06d000000666d000009494900000000000000000001112200000000000077770012100121121001210700007000000000000000000000000000000000
-66606d6066d000006666610094949490000100000000000011222220000000000066660020007702200077027077000700000000000000000000000000000000
-6d006000666d00000161110049494942001910000000000011202020000000000011aa0020000002200000027077000700000000000000000000000000000000
-606060006666d00000d1000094949492001910000000000011220220000000000a11aa1120000002200000027000000700000000000000000000000000000000
-00000000666661000000000049494942000100000000000011202020000000001a11aa1120000002200000027000000700000000000000000000000000000000
-00000000016111000000000004949420000000000000000001222200000000000a11aa1110000001100000010700007000000000000000000000000000000000
-0000000000d100000000000000092000000000000000000000020000000000000011aa0001222210012222100077770000000000000000000000000000000000
+60006d60600000006d00000000040000000000000000000000010000000000000077770020000002878787870077770000000040000000000000000000000000
+6600d6d06d000000666d000009494900000000000000000001112200000000000077770012100121121001210700007000000401000000000000000000000000
+66606d6066d000006666610094949490000100000000000011222220000000000066660020007702200077027077000700004010000000000000000000000000
+6d006000666d00000161110049494942001910000000000011202020000000000011aa0020000002200000027077000704420100000000000000000000000000
+606060006666d00000d1000094949492001910000000000011220220000000000a11aa112000000220000002700000076d441000000000000000000000000000
+00000000666661000000000049494942000100000000000011202020000000001a11aa1120000002200000027000000706d41000000000000000000000000000
+00000000016111000000000004949420000000000000000001222200000000000a11aa1110000001100000010700007000611000000000000000000000000000
+0000000000d100000000000000092000000000000000000000020000000000000011aa0001222210012222100077770000010000000000000000000000000000
 0666000000000000000000000004200060006000066660000000000000000000a00000a0700000a0000000000000000070070070000000000000000000000000
 66d66000009aa9000009900000222400660661006d66d60000000000000000000900090000000000000000000000000007170700000000000000000000000000
-66dd600000a77a000099a900022222200666d10066666d0000000000000000000000000000000000000000000000000001777000000000000000000000000000
-6666600000a77a00009999000222224066d660000666d00000000000000000000000000000000000000000000000000077707770000000000000000000000000
-06660000009aa9000009900000222200601060000066000000000000000000000000000000000000000000000000000000777100000000000000000000000000
-66d660000000000000000000000220000100010000dd000000000000000000000a00090000000000000000000000000007001700000000000000000000000000
-66d6600000000000000000000000000000000000000000000000000000000000900000a0a0000070000000000000000070777070000000000000000000000000
-66d66000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000
+66dd600000a77a000099a900022222200666d10066666d0000000000000000000000000000000000000000000000000001777000222222220000000000000000
+6666600000a77a00009999000222224066d660000666d00000000000000000000000000000000000000000000000000077707770222222220000000000000000
+06660000009aa9000009900000222200601060000066000000000000000000000000000000000000000000000000000000777100111111110000000000000000
+66d660000000000000000000000220000100010000dd000000000000000000000a00090000000000000000000000000007001700022222200000000000000000
+66d6600000000000000000000000000000000000000000000000000000000000900000a0a0000070000000000000000070777070022222200000000000000000
+66d66000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000070000002222000000000000000000
 066600000006000000060000000900000009002000090050200900200000000000000b00000bb0bb000000000000000000000000000000000000000000000000
 66d6600006666600066666000999990009a9990009a99900099999000000000000000b0000000bbb000000000000000000000000000000000000000000000000
 6dd660006656666066566560999999909a9999909a9999909979799000000000b00001bb3bbb0bb1000000000000000000000000000000000000000000000000
