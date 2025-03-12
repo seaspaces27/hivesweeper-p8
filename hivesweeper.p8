@@ -1426,6 +1426,7 @@ function add_obj(id)
    rrnd(1.5),-1.5,false)
    corpse.recol={{11,8}}
   end
+  del(ents,e)
  end
  return e
 end
