@@ -10,6 +10,10 @@ function _init()
  titlecards={}
  plrs={0,0,0,0,0,0,0,0,0}
  ents={}
+ cols={7,10,11,12,13,14,15,8,
+	6, 9,4,5,3,2,1,0}
+	cols_shade={6,4,3,5,5,4,4,5,
+	4, 3,5,1,1,1,0,5}
  init_menu()
 end
 
@@ -17,7 +21,7 @@ function init_menu()
 	menu={}menu.mode="menu"
 	menu.screen=0 menu.offset=0 
 	--menu.tiles={"play","options"}
-	menu.history={}
+	--menu.history={}
  menu.active=true
  menu.reset=function(s)
   s.mode="menu"
@@ -29,24 +33,42 @@ function init_menu()
    v.alive=true
   end
   if s.screen==0 then
-   s.tiles={"play","options","tutorial"}
+   s.tiles={"play","options"}--,"tutorial"}
    for p in all(players)do
     p.no_inp=false
    end
    --players[1].no_inp=false
   end
   if s.screen==1 then
-   s.tiles={"mouse (classic)","regular"}
+   s.tiles={"classic","regular","vs"}
    if(#players>0)players[1].id=3
   end
   --set_new_hive(function()new_hive(1,#menu.tiles+8,nil,
   --32,32)end,0)
   if level==1 then
-	  new_hive(1,#menu.tiles+8,nil,
-	  32,32)
-	  for i=1,#menu.tiles do
-		  hives_screen_pos[i].act=i
-		 end
+	  if s.mode=="options"then
+	   new_hive(4,8)
+	   for i=1,16 do
+	    mines[i]=false
+			  hives_screen_pos[i].col=i
+			  --numbers[i]=1
+			  for p in all(players)do
+			   if p.c==i then
+			    revealed[i]=true
+			    break
+			   end
+			  end
+			  
+			 end
+			 end_bits(1)
+			 s.tiles=""
+	  else
+	   new_hive(1,#menu.tiles+8,nil,
+	   32,32)
+	   for i=1,#menu.tiles do
+			  hives_screen_pos[i].act=i
+			 end
+	  end
 	 else
 	  new_lvl_menu()
 	  sfx(0)
@@ -54,56 +76,55 @@ function init_menu()
   --gamerunning=false
   --end_bits()
  end
- menu.tut=function(s)
-  new_hive(3,3,0)honeyjar.ui_pos=false
-  hidden[1]=true
-  hidden[7]=true
-  if #players>0 then
-	  players[1].no_inp=true
-	  players[1].togo=1
-	  players[1].id=1
-  end
-  s.tut_frame=0
-  numbers[5]=1
-  new_titlecard("get honey",90,-1)
- end
- menu.updtut=function(s)
-  honeyjar.x=lerp(honeyjar.x,60,.1)
-  honeyjar.y=lerp(honeyjar.y,48+48,.1)
-  if(#titlecards==0)s.tut_frame+=1
-  if s.tut_frame==60 then
-   //players[1].hin=1
-   players[1].id=2
-   sfx(5)
-  elseif s.tut_frame==80 then
-   //players[1].hin=1
-   players[1].id=5
-   sfx(7)
-  elseif s.tut_frame==90 then
-   players[1].a=true
-  elseif s.tut_frame==100 then
-   players[1].a=false
-   music(2)
-  elseif s.tut_frame==110 then
-   players[1].id=8
-   music(2)
-  elseif s.tut_frame==200 and #titlecards==0 then
-   new_titlecard("avoid bees",90,-1)
-  elseif s.tut_frame==230 then
-   players[1].id=7
-   debug=true
-  elseif s.tut_frame==260 then
-   mines[2]=true
-   sfx(11)
-  elseif s.tut_frame==290 then
-   relocate_bee(2,3)
-   sfx(11)
-  elseif s.tut_frame==320 then
-   relocate_bee(3,6)
-   sfx(11)
-  end
-  --players[1].hin=1
- end
+-- menu.tut=function(s)
+--  new_hive(3,3,0)honeyjar.ui_pos=false
+--  hidden[1]=true
+--  hidden[7]=true
+--  if #players>0 then
+--	  players[1].no_inp=true
+--	  players[1].togo=1
+--	  players[1].id=1
+--  end
+--  s.tut_frame=0
+--  numbers[5]=1
+--  new_titlecard("get honey",90,-1)
+-- end
+-- menu.updtut=function(s)
+--  honeyjar.x=lerp(honeyjar.x,60,.1)
+--  honeyjar.y=lerp(honeyjar.y,48+48,.1)
+--  if(#titlecards==0)s.tut_frame+=1
+--  if s.tut_frame==60 then
+--   //players[1].hin=1
+--   players[1].id=2
+--   sfx(5)
+--  elseif s.tut_frame==80 then
+--   //players[1].hin=1
+--   players[1].id=5
+--   sfx(7)
+--  elseif s.tut_frame==90 then
+--   players[1].a=true
+--  elseif s.tut_frame==100 then
+--   players[1].a=false
+--   music(2)
+--  elseif s.tut_frame==110 then
+--   players[1].id=8
+--  elseif s.tut_frame==200 and #titlecards==0 then
+--   new_titlecard("avoid bees",90,-1)
+--  elseif s.tut_frame==230 then
+--   players[1].id=7
+--   debug=true
+--  elseif s.tut_frame==260 then
+--   mines[2]=true
+--   sfx(11)
+--  elseif s.tut_frame==290 then
+--   relocate_bee(2,3)
+--   sfx(11)
+--  elseif s.tut_frame==320 then
+--   relocate_bee(3,6)
+--   sfx(11)
+--  end
+--  --players[1].hin=1
+-- end
  menu:init()
  menu.call=function(s,id)
   for i,v in pairs(players)do
@@ -113,20 +134,23 @@ function init_menu()
 	  s.mode=(id and s.tiles[id+s.offset])or s.mode
 	  if(s.mode=="menu")then
 	   menu:init()
+	  elseif(s.mode=="options")then
+	  	menu.screen=2
+	  	menu:init()
 	  elseif(s.mode=="play")then
 	  	menu.screen=1
 	  	menu:init()
-	  elseif(s.mode=="mouse (classic)")then
+	  elseif(s.mode=="classic")then
 	  	menu.active=false
-	  	set_plrs(0)
-	   set_new_hive(function()new_hive(10,10)end,1)
-	   new_titlecard("classic")
+	   new_lvl_classic()
 	  elseif(s.mode=="regular")then
 	  	menu.active=false
-	   --new_hive(15,10)
 	   new_lvl_regular()
-	  elseif(s.mode=="tutorial")then
-	   s:tut()
+	  elseif(s.mode=="vs")then
+	  	menu.active=false
+	   new_lvl_vs()
+	  --elseif(s.mode=="tutorial")then
+	   --s:tut()
 	  end
 	  if not gamerunning then
 	   --s.offset=#beehive
@@ -139,9 +163,9 @@ function init_menu()
   s:call()
  end
  menu.upd=function(s)
-  if s.mode=="tutorial"then
-   s:updtut()
-  end
+--  if s.mode=="tutorial"then
+--   s:updtut()
+--  end
   --mouse join (player 9)
   if stat(34)~=0then --any mouse clicj
    if(plrs[9]==0)join_plr(8)
@@ -149,14 +173,16 @@ function init_menu()
   for p=0,8 do --join
    for b=0,6 do
     if btnp(b,p) then
+     --[[
      if s.mode=="tutorial"then
       s.mode="menu"
       menu.screen=0 music(-1)
       set_new_hive(function()menu:init()end,1)
 	  	  --menu:init()
       break
-     end
-     print(b, b*5 + 10, p*7, p+1)
+     end 
+     ]]--
+     --print(b, b*5 + 10, p*7, p+1)
      if plrs[p+1]==0then
       join_plr(p)
      end
@@ -187,6 +213,7 @@ function join_plr(p)
  
  local np=add_plr(id)
  np.id,np.togo=3+p
+ np.stun=30
  if(id==9)np.mouse=true
  add(players,np)
  sfx(27,2,0,
@@ -253,14 +280,10 @@ function sp_part(id,x,y,dx,dy,ang_change,t)
     pal(s.recol[i][1],s.recol[i][2])
    end
   end
-  if flr(s.ang)%4==0 then
+  if flr(s.ang)%2==0 then
    spr(s.id,s.x,s.y)
-  elseif flr(s.ang)%4==1 then
-   sprot(s.x,s.y,8,8,s.id,0,1)
-  elseif flr(s.ang)%4==2 then
+  elseif flr(s.ang)%2==1 then
    spr(s.id,s.x,s.y,1,1,true,true)
-  elseif flr(s.ang)%4==3 then
-   sprot(s.x,s.y,8,8,s.id,0,-1)
   end
   pal()
  end
@@ -268,6 +291,7 @@ function sp_part(id,x,y,dx,dy,ang_change,t)
 end
 function set_flag(id,plr)
  fl={} fl.from=plr
+ fl.c=plr.c
  local cell=hives_screen_pos[id]
  fl.x=cell[1]
  fl.y=cell[2] --cell.temp_press=true
@@ -288,8 +312,9 @@ function set_flag(id,plr)
  fl.drw=function(s)
   if not s.dying then
   if(s.from)then
-   pal(6,cols[s.from+1])
-   pal(13,cols_shade[s.from+1])
+   pal(6,cols[s.c])
+   pal(13,cols_shade[s.c])
+   if(cols[s.c]==2)pal(2,0)
   end
   local oy=is_pressed(s.id)
   spr(7,s.x,s.y+oy)pal() end
@@ -298,8 +323,9 @@ function set_flag(id,plr)
   local corpse=sp_part(7,s.x,s.y,
   rrnd(1.5),-1.5,true)
   if(s.from)then
-   add(corpse.recol,{6,cols[s.from+1]})
-   add(corpse.recol,{13,cols_shade[s.from+1]})
+   add(corpse.recol,{6,cols[s.c]})
+   add(corpse.recol,{13,cols_shade[s.c]})
+   if(cols[s.c]==2)add(corpse.recol,{2,0})
   end
   
   sfx(10)
@@ -324,12 +350,12 @@ function set_plrs(ppl)
   --players[i]=plr
  end
 end
-function new_cell(i)i=i or #beehive+1
-	beehive=beehive.."#"
+function new_cell(i)i=i or #hives_screen_pos+1
+	--beehive=beehive.."#"
 	mines[i]=false
 	revealed[i]=false
 	hex_pos(i-1,x_os,y_os)
-	return hives_screen_pos[#beehive]
+	return hives_screen_pos[i]
 end
 function hex_pos(i)
  local offset=0local y=flr(i/hive_wi)
@@ -349,7 +375,7 @@ end
 function new_hive(wi,hi,bees,x,y)
  honeyjar:init()
  mines={} sz=wi hi=hi or wi
-	beehive="" hive_size=sz
+	--hive_size=sz --beehive=""
 	hive_wi=wi or 8
 	hive_hi=hi or wi
 	hexs=wi*hi
@@ -357,35 +383,36 @@ function new_hive(wi,hi,bees,x,y)
 	hidden={} -- hidden cells
 	revealed={} --cells shown
 	reveal_que={} --cells to be shown
+	shockwaves={} 
 	--generate hive position on screen
 	hives_screen_pos={}
 	x_os=x or 64-(hive_wi*4)-3
 	y_os=y or 64-(hive_hi*4)+6
-	for i=0,hexs-1 do 
-  --hex_pos(i,x_os,y_os)
- end
 	for i=1,wi*hi do --map
 	 new_cell(i)
 	end
-	mines[wi*hi]=false
+	mines[hexs]=false
 	all_bees=0
 	bees=bees or flr(hexs*.2)
 	bees_left=min(bees,hexs-1) or sz*2 --add bees to map
 	unopened=0 total_bees=bees_left
 	while bees_left>0 do
-	 local id=flr(rnd(wi*hi))
-	 if beehive[id]=="#" then
-	  beehive=setchr(beehive,id,"b")
+	 local id=ceil(rnd(hexs))
+	 if not mines[id] then
+	  --beehive=setchr(beehive,id,"b")
 	  mines[id]=true
 	  bees_left-=1 all_bees+=1
 	 end
 	end
 	
-	for i=1,wi*hi do
-	 revealed[i]=false unopened+=1
+	for i=1,sz do
+	 revealed[i]=false --unopened+=1
 	end
 	parts={} --particles
-	if(flags)then
+	for i=#ents,1,-1 do --kill other entities
+	 if(ents[i].class~="plr")ents[i]:die()
+	end
+	if(flags)then --remove flags
 		for i=#flags,1,-1 do
 		 flags[i]:remove()
 		end
@@ -403,37 +430,35 @@ function new_hive(wi,hi,bees,x,y)
  end
  --first click should be free
  --if(not menu.active)sfx(4)
- first_call=true
+ if menu.mode~="vs"then
+ 	first_call=true
+ else
+  --set_powerup(first_call,false,"plr")
+  --set_powerup(no_inp,0,"plr")
+  for e in all(players)do
+   e.no_inp=true
+  end
+  add_star(ceil(rnd(#hives_screen_pos)))
+ end
  gamerunning=true
  timer_reset()
 end
 
 function _update60()
- --update mouse
- pm=mheld prm=mreld
- mx=stat(32)my=stat(33)
- if(mpressed)then mpressed=false
- else if stat(34)==1 and pm~=1 then
-  mpressed=true
-  end
- end
- mheld=stat(34)==1
- a_released=(pm and not mheld)
- 
- if(mressed)then mressed=false
- else if stat(34)==2 and not prm then
-  mressed=true
-  end
- end
- mreld=stat(34)==2
- b_released=(prm and not mreld)
- --pm=stat(34)==1
- --prm=stat(34)==1
- --update plr inputs
  for i=#ents,1,-1 do
   local e=ents[i]
+  if(e.class=="plr")e:get_input()
   if #titlecards==0 and not transition.active then
-  	e:upd()
+  	if e.stun~=nil then
+  	 e.stun-=1
+  	 if(e.stun==0)e.stun=nil
+  	else
+  	 if e.dizzy then
+  	  e.dizzy-=1
+  	  if(e.dizzy==0)e.dizzy=nil
+  	 end
+  	 e:upd()
+  	end
   else
    e:move()
   end
@@ -443,58 +468,6 @@ function _update60()
  validate_moves(ents) 
  --if(move_sfx and #players<=2)print(default_tile..rnd(footsteps))
 
- if #titlecards==0 then
- if a_released and selecting then
-  --perform_act(selecting)
-  release_cell(selecting,nil)
- end
- 
- --[[
- for i=1,#hives_screen_pos do
-  local cell=hives_screen_pos[i]
-  --local mx=plr.x local my=plr.y
-  //use id instead?
-  if(mx>=cell[1] and mx<cell[1]+8
-  and my>=cell[2] and my<cell[2]+8)then
-  	--selecting=i
-  	--set cell to pressed
-	 	if mpressed then
-	 		if selecting then
-  	  hives_screen_pos[selecting].pressing=nil
-  	 else
-  	  sfx(14)
-  	 end
-  	 
-	 	 hives_screen_pos[i].pressing=true
-	 	 --s.pressing=s.id
-	 	 selecting=i
-	 	end
-	 	if false then --moved
-	 	 s.pressing=nil
-	 	 hives_screen_pos[s.id].pressing=nil
-	 	end
-	 	
-	 	--moved from pressly-set cell
-	 	--if s.pressing~=s.id and s.pressing~=nil then
-	 	 --s.pressing=nil
-	 	 --hives_screen_pos[s.id].pressing=nil
-	 	--end
-  	if(a_released) and revealed[i]==false and flagfield[i]==nil then
- 	  open_cell(i,nil)
-  	elseif(a_released or mheld)and revealed[i]==true then
-  	 chord_cell(i,a_released)
-  	elseif(mressed) and revealed[i]==false then
-	   flag_cell(i,nil)
-   end
-   if a_released then
-    perform_act(i)
- 	  release_cell(i,nil)
- 	 end
-   break --dont want to select multiple at once
-  end
- end
- ]]--
- end
  --update flags
  for i=#flags,1,-1 do
   flags[i]:upd()
@@ -503,8 +476,7 @@ function _update60()
  for i=#parts,1,-1 do
   parts[i]:upd()
  end
- --update honeyblops
- --pal()
+ --update honeyblobs
  for i=#hblobs,1,-1 do
   hblobs[i]:upd()
  end
@@ -526,6 +498,8 @@ function _update60()
 	  end
 	 end
  end
+ --update shockwaves
+ upd_waves()
  
  --draw titlecard
  if #titlecards>0 then
@@ -534,25 +508,16 @@ function _update60()
 end
 
 function _draw()cls()
- originx=0 originy=0
- os=64-(hive_size*4)
- 
+ os=64-sz*4
  --draw cells
  for i=1,#hives_screen_pos do
   local cell=hives_screen_pos[i]
   local id=1
-  if revealed[i]==true then
-   id=2
-  end
-  if hidden[i]==true then
-   id=3
-  end
-  --if debug
-  if debug and mines[i]==true then
-   id=5
-  end
-  if revealed[i]and mines[i]==true then
-   id=6
+  if(revealed[i]==true)id=2
+  if(hidden[i]==true)id=3
+  if mines[i] then
+   id=debug and 5
+   or revealed[i] and 6 or id
   end
   if cell.act then
    if(cell.act=="back")id=49
@@ -564,28 +529,27 @@ function _draw()cls()
   local oy=0
   if cell.pressing then oy=1 end
   if cell.temp_press then oy=1 end
+  local sh=shockwaves[i]
+  if sh then
+   if(sh[1]>=0)oy+=rrnd(2)
+  end
+  if cell.col then
+   pal(9,cols[cell.col])
+   pal(2,cols_shade[cell.col])
+  end
   spr(id,cell[1],cell[2]+oy)pal()
-  
+  --if(sh)print(sh[3],cell[1]+2,cell[2]+1,7)
   if debug or revealed[i]then
-   local txt=(beehive[i]~="b" and numbers[i]) or ""
+   local txt=(not mines[i] and numbers[i]) or ""
 	  print(txt,cell[1]+2,cell[2]+1+oy,
 	  num_cols[numbers[i]])
   end
   //print(beehive[i],cell[1],cell[2],7)
  end
- --highlight selected
- if revealed[selecting]==false then
- 	//hilight(hives_screen_pos[selecting])
- 	//print("\#1"..(selecting-1)%hive_size..","..ceil(selecting/hive_size)-1)
- 	local adj=neighbours(selecting)
- 	for i=1,#adj do
- 	 --hilight(hives_screen_pos[adj[i]])
- 	end
- end
+
  --menu
  if(menu.active)menu:drw()
- //?"\#1"..#reveal_que
- //?"\#5"..#players
+
  for i=1,#reveal_que do
   reveal_que[i]:drw()
  end
@@ -626,12 +590,15 @@ function _draw()cls()
 end
 
 function mark_hex(id,t,plr)
+ local mark={id=id,t=t or 0,
+ full_t=t or 0, done=false,
+ lose_all=true}--[[
  local mark={}
  mark.id=id
  mark.t=mark.full_t or t or 0
  mark.full_t=mark.full_t or t
  mark.done=false
- mark.lose_all=true
+ mark.lose_all=true ]]--
  hives_screen_pos[id].pressing=true
  mark.set=function(s)
   --if cell isnt already revealed
@@ -657,15 +624,15 @@ function mark_hex(id,t,plr)
    end
    revealed[s.id]=true
 	  s.done=true sfx(2,0,0,4)
-	  if not mines[s.id] or 
-	  s.id>hexs then
-	   honeyblob(s.id) unopened-=1
+	  if not mines[s.id] and 
+	  s.id<hexs then
+	   honeyblob(s.id,plr)
 	  end
 	  local lost=mines[s.id]
 	  if gamerunning then
-	   if lost and (plr and plr.powerups["bubble"])then
+	   if lost and (plr and plr.bubble)then
 	    lost=false
-	    --plr:die()
+	    plr:die()
 	   end
 	   winlose(lost,plr)
 	  end
@@ -675,7 +642,7 @@ function mark_hex(id,t,plr)
 	 del(reveal_que,s)
  end
  mark.upd=function(s)
-  hives_screen_pos[s.id].pressing=nil
+  --hives_screen_pos[s.id].pressing=nil
   if s.t>1 then
    s.t-=1
   else
@@ -716,8 +683,8 @@ function relocate_bee(id,t_id)
 	  if(i~=id and (mines[i]==nil or mines[i]==false))then
 	   --move bee
 	   mines[i]=true
-	   beehive=setchr(beehive,id,"#")
-	   beehive=setchr(beehive,i,"b")
+	   --beehive=setchr(beehive,id,"#")
+	   --beehive=setchr(beehive,i,"b")
 	   --update number list
 	   local adj=neighbours(id)
 	   for j=1,#adj do
@@ -784,27 +751,51 @@ function shake_cells(amt,frames)
 end
 
 function winlose(gameover,plr)
+ local all_dead=true
+ for p in all(players)do
+  if(p.alive)all_dead=false break
+  --[[idea, dead players'
+   honey should go back to
+   the board, and repopulate
+   the hive, relocating the
+   bees within that area?
+  ]]--
+ end
  if gameover then--unopened<(total_bees or 0) then
   --lost
   if(plr)plr:die()
- 	sfx(3) gamerunning=false
-  local offset=0
+ 	sfx(3)
   shake_cells(1,2)
-  for j=1,#mines do
-  --mark all mines
-   if mines[j]==true and revealed[j]==false then
-    offset+=1
-    local mark=mark_hex(j,offset)
-    --avoid recursion
-    mark.lose_all=false
+  
+  if true then--menu.mode~="vs"or all_dead then
+	  gamerunning=false
+	  local offset=0
+	  for j=1,#mines do
+	  --mark all mines
+	   if mines[j]==true and revealed[j]==false then
+	    offset+=1
+	    local mark=mark_hex(j,offset)
+	    --avoid recursion
+	    mark.lose_all=false
+	   end
+  	end
+  end
+ else
+  --detect win
+  local complete=true
+  for i,v in pairs(revealed)do
+   if v==false and not mines[i]then
+    complete=false break
    end
   end
- elseif unopened==total_bees then
-  --win
-  gamerunning=false
-  if not menu.active then music(1)
-  else sfx(20)end
+  if complete then
+	  --win
+	  gamerunning=false
+	  if not menu.active then music(1)
+	  else sfx(20)end
+  end
  end
+ 
  if not gamerunning then
  	--menu.active=true
  	end_bits(gameover)
@@ -861,11 +852,12 @@ function transpose(id,os)
  --get new position
  n_id+=id
  if (n_id>0 and 
- n_id<=#beehive) then
+ n_id<=#hives_screen_pos) then
   ty=((os=="tl"or os=="tr")and -1
   or((os=="bl"or os=="br")and 1
   or 0))+y_
-  if ceil((n_id)/hive_wi)==ty then
+  if ceil((n_id)/hive_wi)==ty
+  and n_id<=#hives_screen_pos then
    return n_id
   end
  end
@@ -874,17 +866,20 @@ end
 
 function open_cell(i,plr)
 	if first_call then --first click is safe
-  first_call=false sfx(12)
+  first_call=false sfx(12,2)
   relocate_bee(i)
   for i=1,#players do
    players[i].first_call=false
   end
   timer_start()
  else
-  sfx(13)
+  sfx(13,nil,0,8)
+ end
+ if hives_screen_pos[i].col then
+  plr.c=i
  end
  local dur=5
- if plr and plr.powerups["broom"]then
+ if plr and plr.broom then
   dur=0
  end
  local check=mark_hex(i,dur,plr)
@@ -954,6 +949,55 @@ function perform_act(id)
  end
 end
 
+function set_sw(id)
+ 
+ for e in all(ents)do
+  if e.id==id and e.pot==nil then
+   e.stun=stun
+  end
+	end
+end
+
+function upd_waves()
+	for i,v in pairs(shockwaves)do
+		if v then
+		 v[1]-=1--tick down
+		 if v[1]==0 then
+		  --propagate
+		  if v[2]~=0 then--iterating
+			  for j,id in pairs(neighbours(i))do
+			   shockwave(id,v[4],v[2]-1,v[3],v[5])
+			  end
+		  end
+		  --and stun
+		  for e in all(ents)do
+			  if e.id==i and e.pot==nil then
+			   e.stun=v[5]
+			  end
+				end
+				sfx(13,3,8,8)
+		 end
+		 if v[1]<=-60 or v[1]==nil then --delete
+		  --del(shockwaves,v)
+		  shockwaves[i]=nil
+		  --v={}
+		 end
+		end
+	end
+end
+function shockwave(id,t,loops,ic,stun_time)
+ local p=shockwaves[id]
+ local w={t,loops or -1,
+ ic or rnd(),t,stun_time or t*32}
+ if p then
+  if w[3]==p[3] then
+   return p
+  end
+ end
+ shockwaves[id]=w
+ return w
+end
+
 function new_titlecard(title,t,sf)
  cs={}cs.t=t or 90cs.title=title or "h"
  cs.init=false
@@ -985,10 +1029,7 @@ function get_cell(id)
  return hives_screen_pos[id] or {}
 end
 
-honeyjar={}
-honeyjar.x=109
-honeyjar.y=0
-honeyjar.ui_pos=true
+honeyjar={x=109,y=0,ui_pos=true}
 honeyjar.init=function(s)
  honeyjar.open=true
  honeyjar.pips=0
@@ -1005,8 +1046,8 @@ honeyjar.leak=function(s)
  end
 end
 honeyjar.drw=function(s)
- local id=26 local oy=s.pressed==0 and 0 or 1
- if(s.open)id=25
+ local id=s.open and 25 or 26
+ local oy=s.pressed==0 and 0 or 1
  
  local p=flr((s.pips/(#hives_screen_pos-total_bees))*4)--+(s.pressed>0 and 2 or 0)
  if(s.pips>0)rectfill(s.x+2,s.y+oy+5-p,s.x+5,s.y+oy+5,9)
@@ -1020,18 +1061,21 @@ honeyjar.drw=function(s)
 end
 
 hblobs={}
-function honeyblob(id)
- 
- local hb={}
+function honeyblob(id,plr)
  local c=hives_screen_pos[id]or {honeyjar.x+4,honeyjar.y}
- hb.x=c[1] hb.y=c[2]
- hb.phase=0 hb.t=0 hb.offset=0
- hb.id=id hb.alive=gamerunning
- hb.dy=-rnd(1) hb.dx=rrnd(2)
+ local hb={x=c[1],y=c[2],
+	 phase=0,t=0,offset=0,id=id,
+	 alive=gamerunning,
+	 dy=-rnd(1),dx=rrnd(2),
+	 target=menu.mode=="vs"
+	 and plr
+	 or honeyjar
+ }
  hb.init=function(s)
  
  end
  hb.upd=function(s)
+  local target=s.target
   s.t+=1
   if s.t==3 and s.phase==0 then
    if(mines[s.id]==true)del(hblobs,s)
@@ -1045,9 +1089,10 @@ function honeyblob(id)
    s.y=lerp(s.y,s.y-3,.1)
   elseif s.phase==2then
    if s.alive then --go to jar
-	   s.x=lerp(s.x,honeyjar.x,.12)
-	   s.y=lerp(s.y,honeyjar.y,--.05
-	   (mid(.4,.24,abs(honeyjar.y-s.y)/64)*.4)
+	   s.x=lerp(s.x,target.x,.12)
+	   s.y=
+	   lerp(s.y,target.y,--.05
+	   (mid(.4,.24,abs(target.y-s.y)/64)*.4)
 	   )
    else--fall away
     s.x+=s.dx
@@ -1058,20 +1103,21 @@ function honeyblob(id)
    end
    --if(s.x==honeyjar.x)s.phase=3
   end
-  if abs(s.y-honeyjar.y)<4
-  and abs(s.x-honeyjar.x)<4 then
-   honeyjar.pips+=1
-   honeyjar.pressed=2
+  if abs(s.y-target.y)<4
+  and abs(s.x-target.x)<4 then
+   target.pips+=1
+   target.pressed=2
    del(hblobs,s)
   end
  end
  hb.drw=function(s)
+  local target=s.target
 	 if s.phase==0 then
 	 	spr(40,s.x,s.y)
 	 elseif s.phase<=2then
 	  if s.phase==2 and not s.alive then
 	   pal(9,13)pal(10,6)
-	   if(s.t==0)sfx(11)honeyjar.pressed=2
+	   if(s.t==0)sfx(11)target.pressed=2
 	  end
 	  spr(34,s.x,s.y)
 	  pal()
@@ -1160,25 +1206,7 @@ end
 --ui + misc
 
 function lerp(a,b,z)
- //s.x+=((cell[1]+3)-s.x)*.35
  return a+(b-a)*z
-end
-
-function sprot(dx,dy,h,w,mx,my,rot)
- --dx the x position of the sprite
- --dy the y position of the sprite
- --h the height of the sprite from the map
- --w the width of the sprite from the map
- --rot = 1 rotate 90 degrees anticlockwise
- --rot = -1 rotate 90 degrees clockwise
- rot = rot or 1
- if rot!=1 then
-  dx+=8
- end
- for i=0,w-1 do
-	 local nx=dx+(i*rot)
-	 tline(nx,dy,nx,dy+h,mx,my+i/8)
- end
 end
 
 --mouse_icon="\^:0103070305000000"
@@ -1186,8 +1214,8 @@ end
 --clock_icon="\^:0e151d110e000000"
 --function header()end
 function ui_draw()color(7)
- str=#flags
- str=all_bees
+ --str=#flags
+ --str=all_bees
  local tx=1 ty=1
 	sspr(4,8,3,5,tx,ty)tx+=4
 	local ox=print(all_bees-#flags,tx,ty)
@@ -1202,7 +1230,9 @@ function ui_draw()color(7)
 	 pal(13,cols_shade[p.c])
 	 spr(17,ox,ty)
 	 pal()
-	 ol=print(p.clicks,ox+6,ty)
+	 scr=menu.mode=="vs"and p.pips
+	 or p.clicks
+	 ol=print(scr,ox+6,ty)
 	 ox=ol
 	end
 	--print(flag_icon..all_bees-#flags)
@@ -1225,15 +1255,26 @@ function ui_draw()color(7)
 end
 -->8
 --player code
-cols={7,10,11,12,13,14,15,8,
-6, 9,4,5,3,2,1,0}
-cols_shade={6,4,3,5,5,4,4,5,
-4, 3,5,1,1,1,0,5}
+
+function set_powerup(pup,v,e)
+ if type(e)=="string" then
+  --is class
+  for en in all(ents)do
+   if en.class==e or en.name==e then
+    set_powerup(pup,v,en)
+   end
+  end
+ elseif type(e)=="table"then
+  --is entity
+  get_powerup(e,pup,v)
+ end
+end
 
 function add_plr(i)
 	local plr=add_obj(1) plr.class="plr"
-	plr.x=64 plr.y=64 plr.alive=true
-	plr.pl=i-1plr.c=i
+	plr.x,y=64,64 plr.alive=true
+	plr.pl=i-1
+	plr.c=i
 	plr.first_call=true
 	plr.cooldown=0
 	plr.mouse=false
@@ -1245,25 +1286,26 @@ function add_plr(i)
 	plr.no_inp=false
 	plr.pressing=nil
 	plr.togo=plr.id
-	plr.prev_a=0
-	plr.prev_b=0
-	plr.powerups["noflag"]=-1
-	plr.clicks=0 plr.wt=0
-	plr.upd=function(s)
-	 --get controls
-	 if not s.no_inp then
-		 s.hin=tonum(btn(➡️,s.pl))-tonum(btn(⬅️,s.pl))
-		 s.hinp=tonum(btnp(➡️,s.pl))-tonum(btnp(⬅️,s.pl))
-		 s.vin=tonum(btn(⬇️,s.pl))-tonum(btn(⬆️,s.pl))
-		 s.vinp=tonum(btnp(⬇️,s.pl))-tonum(btnp(⬆️,s.pl))
-		 s.prev_hin=s.hin
-		 s.prev_vin=s.vin
-		 plr.prev_a=s.a
-		 plr.prev_b=s.b
+	plr.prev_a,plr.prev_b=0,0
+	plr.noflag=-1
+	plr.clicks=0 plr.scr=0 plr.pips=0
+	plr.wt=0
+	plr.get_input=function(s)
+	 if s.no_inp then
+	 return end
+	 s.hin=tonum(btn(➡️,s.pl))-tonum(btn(⬅️,s.pl))
+	 s.hinp=tonum(btnp(➡️,s.pl))-tonum(btnp(⬅️,s.pl))
+	 s.vin=tonum(btn(⬇️,s.pl))-tonum(btn(⬆️,s.pl))
+	 s.vinp=tonum(btnp(⬇️,s.pl))-tonum(btnp(⬆️,s.pl))
 	 
-		 s.ap=btnp(🅾️,s.pl)and not s.prev_a s.bp=btnp(❎,s.pl)
-		 s.a=btn(🅾️,s.pl)s.b=btn(❎,s.pl)
-	 end
+	 if(s.dizzy)s.hin*=-1 s.vin*=-1s.hinp*=-1 s.vinp*=-1
+	 
+	 s.prev_hin,s.prev_vin=s.hin,s.vin
+	 plr.prev_a,plr.prev_b=s.a,s.b
+ 
+	 s.ap=btnp(🅾️,s.pl)and not s.prev_a s.bp=btnp(❎,s.pl)
+	 s.a=btn(🅾️,s.pl)s.b=btn(❎,s.pl)
+	 
 	 if s.mouse then
 	  s.a=stat(34)==1or stat(34)==4
 	  s.ap=s.a and not s.prev_a
@@ -1271,7 +1313,7 @@ function add_plr(i)
 	  s.bp=s.b and not s.prev_b
 	  if(s.a)s.pressing=s.id
 	  local atcell=false
-	  local mx=stat(32)local my=stat(33)
+	  local mx,my=stat(32),stat(33)
 	  for i,v in pairs(hives_screen_pos)do
 		  if(mx>=v[1] and mx<v[1]+8
 		  and my>=v[2] and my<v[2]+8)then
@@ -1289,7 +1331,11 @@ function add_plr(i)
  	  get_cell(s.pressing).pressing=nil
  	 end
 	 end
-	 
+	end
+	plr.upd=function(s)
+	 --get controls
+		--s:get_input()
+
 	 if(s.ap)sfx(14,1)
 	 
 	 local a_released=s.prev_a and not s.a
@@ -1342,8 +1388,8 @@ function add_plr(i)
 		end
 		if s.id~=s.togo then --moved
 		 local cl=10
-		 if s.powerups["noflag"]then
-		  if s.powerups["noflag"]==0 or s.powerups["noflag"]==-1 then
+		 if s.noflag then
+		  if noflag==0 or s.noflag==-1 then
 		   cl=8
 		  end
 		 end
@@ -1361,40 +1407,45 @@ function add_plr(i)
 			if(a_released) and revealed[s.id]==false and flagfield[s.id]==nil then
 			 open_cell(s.id,s) s.clicks+=1
 			 
-			 if s.powerups["broom"]then
-				 s.powerups["broom"]-=1
-			  print("\ai6c1")
-			  if(s.powerups["broom"]==0)then
-			   s.powerups["broom"]=nil
+			 if s.broom then
+				 s.broom-=1
+			  --print("\ai6c1")
+			  sfx(6,3,5,1)
+			  if(s.broom==0)then
+			   s.broom=nil
 			   sp_part(28,s.x,s.y,
 			   .3,-1,false,60)
 			  end
 		  end
 		  
-			 if s.powerups["noflag"]then
-				 if s.powerups["noflag"]>0then
-				  s.powerups["noflag"]-=1
+			 if s.noflag then
+				 if s.noflag>0then
+				  s.noflag-=1
+				  if s.noflag==0 then
+				   --noflag activated
+				   sfx(6,3,8,8)
+				  end
 				 end
 			 end
 		 elseif (s.a or a_released)and revealed[s.id]==true then--activate neighbours if flags-bee is met
 			 chord_cell(s.id,a_released,s)
 			 
 			 if a_released then
-			  if s.powerups["broom"]then
-					 s.powerups["broom"]-=1
+			  if s.broom then
+					 s.broom-=1
 				  print("\ai6c1")
-				  if(s.powerups["broom"]==0)then
-				   s.powerups["broom"]=nil
+				  if(s.broom==0)then
+				   s.broom=nil
 				   sp_part(28,s.x,s.y,
 				   .3,-1,false,60)
 				  end
 			  end
-			  if s.powerups["pot"]then
-			   print("\ai1c3e2e1")
-			   s.powerups["pot"]-=1
-			   --shockwave(id)
-			   if(s.powerups["pot"]==0)then
-				   s.powerups["pot"]=nil
+			  if s.pot then
+			   //print("\ai1c3e2e1")
+			   s.pot-=1
+			   shockwave(s.id,4)--,set_t,loops,ic,stun_time)
+			   if(s.pot==0)then
+				   s.pot=nil
 				   sp_part(28,s.x,s.y,
 				   .3,-1,false,60)
 				  end
@@ -1402,9 +1453,10 @@ function add_plr(i)
 		  end
 		  
 			elseif s.bp and revealed[s.id]==false then
-			 flag_cell(s.id,s.pl)
-			 if s.powerups["noflag"]then
-			  s.powerups["noflag"]=8
+			 flag_cell(s.id,s)
+			 if s.noflag then
+			  if(s.noflag==0)sfx(6,3,16,8)
+			  s.noflag=8
 			 end
 			end
 			
@@ -1441,7 +1493,8 @@ function add_plr(i)
 	 local id=17
 	 --if(s.pressing~=nil)id=18
 	 if(s.a)id=18
-	 id=s.alive and id or id+2
+	 id=s.winner and id+4 or
+	 (s.alive and id or id+2)
 	 if s.mouse==true then
 	  --ghost at actual mouse postiion
 	  spr(id+(s.alive and 2 or 0),stat(32),stat(33))
@@ -1456,12 +1509,13 @@ function add_plr(i)
 	 //print("\#2"..s.hin.." "..s.vin)
 	end----[[
 	plr.die=function(s)
-	 if s.powerups["bubble"]then
-   s.powerups["bubble"]=nil
+	 if s.bubble then
+   s.bubble=nil
    sfx(6,-1,3,2)
    return
   end
-	 s.alive=false
+  s.alive=false
+  winlose()
 	end--]]--
 	return plr
 end
@@ -1504,78 +1558,84 @@ function check_players(s)
 end
 
 
-function get_powerup(e,name)
- //e.powerups[name]=true
+function get_powerup(e,name,v)
  if name=="bubble"then
-  e.powerups["bubble"]=-1--60*10
- end
- if name=="broom"then
-  e.powerups["broom"]=6
- end
- if name=="pot"then
-  e.powerups["pot"]=6
+  e.bubble=v or -1--60*10
+ elseif name=="broom"then
+  e.broom=v or 6
+ elseif name=="pot"then
+  e.pot=v or 6
+ elseif name=="no_inp"then
+  e.no_inp=v
  end
 end
 
 function drw_powerups(e)
- if e.powerups["bubble"]~=nil then
+ if e.bubble then
   spr(27,e.x-2,e.y)
  end
- if e.powerups["broom"]~=nil then
+ if e.broom then
   spr(28,e.x,e.y+2,1,1,
-  e.powerups["broom"]%2==0 and true or false)
+  e.broom%2==0 and true or false)
+  if e.broom<-4 then
+   e.broom+=2
+  end
  end
- if e.powerups["pot"]~=nil then
+ if e.pot then
   local oy=0
-  if e.class=="player"then
+  if e.class=="plr"then
    oy=3
   end
   spr(29,e.x,e.y+oy)
  end
+ if e.stun or e.dizzy then
+ 	local id=e.stun and 30 or 31
+ 	local tick=e.stun or e.dizzy
+  pal(1,0)
+  local _flip=tick%30<15
+  spr(id,e.x+sin(tick/40)*3,
+  e.y+sin(tick/30)*2,1,1,
+  _flip,_flip)
+  pal()
+ end
+ if e.no_inp then
+  spr(47,e.x,e.y)
+ end
 end
 
 function add_obj(id)
- local e={}e.id=id e.togo=e.id
+ local e={id=id,togo=id,t=0,pips=0}
  if hives_screen_pos then
-  e.x=hives_screen_pos[e.id][1]
-  e.y=hives_screen_pos[e.id][2]
+  e.x,e.y=
+  hives_screen_pos[e.id][1],hives_screen_pos[e.id][2]
  end
- e.t=0 e.powerups={}
  e.move=function(s)
-  if(s.id>hexs)s:die()return
+  if(s.id>=#hives_screen_pos)s:die()return
   if s.id then
 	  local cell=hives_screen_pos[s.id]
-	  s.x=lerp(s.x,cell[1],.35)
-			s.y=lerp(s.y,cell[2],.35)
+	  s.x,s.y=
+	  lerp(s.x,cell[1],.35),lerp(s.y,cell[2],.35)
 		end
  end
  e.die=function(s)
-  if s.powerups then
-   if s.powerups["bubble"]then
-    end_powerup("bubble",s.powerups)
-    return
-   end
+  if s.bubble then
+   s.bubble=nil
+   end_powerup("bubble")
+   return
   end
   if s.name then
-   local sp=nil
-   if s.name=="hopper"then
-    sp=56
-   end
-   
-   local corpse=sp_part(sp,s.x,s.y,
+   local corpse=sp_part(e.sp,s.x,s.y,
    rrnd(1.5),-1.5,false)
    --corpse.recol={{11,8}}
-   
    corpse.flicker=5
    corpse.t=30
    
    if s.class=="powerup"then
+    corpse.id=0
     corpse.t=5
-    corpse.gx=0 corpse.gy=0
-    corpse.dx=0 corpse.dy=0
-    if s.name=="bubble"then
-     corpse.id=40
-    end
+    corpse.gx,corpse.gy=0,0
+    corpse.dx,corpse.dy=0,0
+    if(s.name=="bubble")corpse.id=40
    end
   end
   if s.class~="plr"then
@@ -1588,57 +1648,68 @@ function add_obj(id)
  return e
 end
 
-function end_powerup(pup,pups,cla)
- pups[pup]=nil
+function end_powerup(pup)
  if(pup=="bubble")sfx(6,-1,3,2)
  --pup
 end
 
-function add_powerup(id,name)
+function add_powerup(id,name,sp)
  local e=add_obj(id)
- e.class="powerup" e.name=name
+ e.class="powerup"
+ e.name,e.sp=name,sp
  e.got=function(s)
-  sfx(5)
+  sfx(5,3)
   s:die()
+ end
+ e.upd=function(s)
+  e.t+=1
+ end
+ e.drw=function(s)
+  spr(s.sp,s.x,s.y+sin(s.t/90))
  end
  return e
 end
 
 function add_bubble(id)
- local e=add_powerup(id,"bubble")
- e.upd=function(s)
-  e.t+=1
- end
- e.drw=function(s)
-  spr(27,s.x,s.y+sin(s.t/90))
- end
- return e
+ return
+ add_powerup(id,"bubble",27)
 end
 
 function add_broom(id)
- local e=add_powerup(id,"broom")
- e.upd=function(s)
-  e.t+=1
- end
- e.drw=function(s)
-  spr(28,s.x,s.y+sin(s.t/90))
- end
- return e
+ return 
+ add_powerup(id,"broom",28)
 end
 
 function add_pot(id)
- local e=add_powerup(id,"pot")
+ return
+ add_powerup(id,"pot",29)
+end
+
+function add_star(id)
+ local e=add_obj(id)
+ e.t=e.y
  e.upd=function(s)
-  e.t+=1
+  s.t-=1
+  if s.t==0then
+   first_call=true
+   open_cell(s.id,nil)
+   set_powerup(no_inp,false,"plr")
+   s:die()
+   timer_start()
+   for e in all(players)do
+	   e.no_inp=false
+	   e.pips=0
+	  end
+  end
  end
  e.drw=function(s)
-  spr(29,s.x,s.y+sin(s.t/90))
+  spr(33,s.x+sin(s.t/30)*6,s.y-s.t)
  end
 end
 
 function add_hopper(id)
  local e=add_obj(id)
- e.class="enemy"e.name="hopper"
+ e.class,e.name="enemy","hopper"
  e.side=ceil(rnd(1))==1
  e.hopped_from=e.id
  e.move=function(s)
@@ -1661,6 +1732,7 @@ function add_hopper(id)
 	   or check_players(e)then
 	    s.t=revealed[s.id]and 236 or 86 
 	   end
+	   if(s.pot)shockwave(s.id,8,2,nil,60)
 	  end
 	 end
 	end
@@ -1705,6 +1777,7 @@ function add_beetle(id)
  e.t=10+rnd(60)
  e.ct=10+rnd(10)
  e.sp=58
+ e.holding=nil
  e.upd=function(s)
   s:move()
   s.t-=1 --timer
@@ -1712,17 +1785,28 @@ function add_beetle(id)
    s.t=s.ct
    --move forward
    s.togo=transpose(s.id,dirs[1+s.dir_i])
+   if not s.holding then
+    s.holding=check_ents(s)
+   end
 	  --if same spot or invalid spot
 	  if s.togo==s.id or s.togo==nil then
-	   --turn around
-	   s.dir_i=(s.dir_offset+s.dir_i)%6
+	   if s.holding then
+	    --chomp
+	    s.holding:die()
+	    s.holding=nil
+	   else
+		   --turn around
+		   s.dir_i=(s.dir_offset+s.dir_i)%6
+	   end
 	   s.togo=s.id
-	   
 	  end
 	  s.y-=1
-		 --s.id=s.togo
-		 check_powerups(s)
-		 check_enemies(s)
+		 s.id=s.togo
+		 if s.holding then
+		  s.holding.stun=8
+		  s.holding.togo=s.id
+		  s.holding.id=s.id
+		 end
 	 end
  end
  e.drw=function(s)
@@ -1753,15 +1837,15 @@ function add_bee(id)
   if(s.t%8==0)s.flutter=not s.flutter
   if s.t<=0then
    s.t=s.ct
-   --move forward
-   s.togo=transpose(s.id,dirs[1+s.dir_i])
-	  --if same spot or invalid spot
-	  if s.togo==s.id or s.togo==nil then
-	   --turn around
-	   s.dir_i=(s.dir_offset+s.dir_i)%6
-	   s.togo=s.id
-	   sfx(2,0,8,16)
-	  end
+--   --move forward
+--   s.togo=transpose(s.id,dirs[1+s.dir_i])
+--	  --if same spot or invalid spot
+--	  if s.togo==s.id or s.togo==nil then
+--	   --turn around
+--	   s.dir_i=(s.dir_offset+s.dir_i)%6
+--	   s.togo=s.id
+--	   sfx(2,0,8,16)
+--	  end
 	  s.y-=1
 		 check_powerups(s)
 		 check_enemies(s)
@@ -1770,7 +1854,7 @@ function add_bee(id)
 	 end
  end
  e.drw=function(s)
-  local oy=is_pressed(s.id)
+  local oy=sin(s.t/s.ct)*1
   pal(1,0)pal(5,1)
   spr(s.sp+tonum(s.flutter),
   s.x,s.y+oy,1,1,
@@ -1849,18 +1933,51 @@ function new_lvl_menu()
 	end)
 end
 
-regular_lvls={
+regular_lvls=--[[
+{
+function()new_hive(4,4)end,
 function()new_hive(5,5)end,
+function()new_hive(7,7)end,
 function()new_hive(8,8)end,
 function()new_hive(9,5)end,
 function()new_hive(12,9)end,
-function()new_hive(15,10)end,
-}
+function()new_hive(13,10)end,
+function()new_hive(14,12)end,
+function()new_hive(15,14)end,
+}]]--
+"4,4, 5,5, 7,7, 8,8, 9,5, 12,9, 13,10, 14,12, 15,14"
 function new_lvl_regular()
+ local data=split(regular_lvls)
+ local hx=data[-1+level*2]
+ local hy=data[level*2]
  set_new_hive(
- regular_lvls[level],1)
+  function()new_hive(hx,hy)end
+ ,1)
+ --regular_lvls[level],1)
  if(level==1)new_titlecard("regular",90)
 	new_titlecard("level "..level,40,0)
+end
+
+function new_lvl_classic()
+ set_powerup("broom",-1,"plr")
+ set_new_hive(
+ function()new_hive(10,10)end
+ ,1)
+ if(level==1)new_titlecard("classic",90)
+	new_titlecard(level,40,0)
+end
+
+function new_lvl_vs()
+ local hx=7+flr(rnd(#players))
+ local hy=6+flr(rnd(#players))
+ set_new_hive(
+ function()new_hive(hx,hy)end
+ 
+ ,1)
+ --if(level==1)new_titlecard("vs",90)
+	
+	--new_titlecard("round "..level,40,0)
+	new_titlecard("round "..level,40,0)
 end
 __gfx__
 00000000000900000001000000000000000000000009000000000000000000000077770077770000000000000000000000000000000000000000000000000000
@@ -1871,19 +1988,19 @@ __gfx__
 007007009999999210111110000100000000000099f9f99201101010000666001a11aa110a11aa110aaaaaa00005500000055000005005000005500000000000
 00000000099999220111110000000000070007000999992500111100000022200a11aa110011aa0000aaaa000000000000000000000000000000000000000000
 00000000000922000001000000000000000700000009250000010000000000000011aa0000000000000000000000000000000000000000000000000000000000
-60006d60600000006d000000600000006d0000000000000000010000000000000077770020000002878787870077770000000040000000000000000000000000
-6600d6d06d000000666d00006d00000060dd00000000000001112200000000000077770012100121121001210700007000000401000000000000000000000000
-66606d6066d000006666610060d00000d66660000001000011222220000000000066660020007702200077027077000700004010222222220000000000000000
-6d006000666d000001611100600d0000006000000019100011202020000000000011aa0020000002200000027077000704420100222222220000000000000000
-606060006666d00000d100006000d00000d000000019100011220220000000000a11aa112000000220000002700000076d441000111111110000000000000000
-000000006666610000000000d6666000000000000001000011202020000000001a11aa1120000002200000027000000706d41000022222200000000000000000
-00000000016111000000000000600000000000000000000001222200000000000a11aa1110000001100000010700007000611000022222200000000000000000
-0000000000d100000000000000d00000000000000000000000020000000000000011aa0001222210012222100077770000010000012222100000000000000000
-0666000000000000000000000004200060006000066660002009002000000000a00000a0700000a0000000000000000070070070000000000000000000000000
-66d66000009aa9000009900000222400660661006d66d60009999900000000000900090000000000000000110000000007170700000000000000000000000000
-66dd600000a77a000099a900022222200666d10066666d0099797990000000000000000000000000000155550000000001777000000000000000000000000000
-6666600000a77a00009999000222224066d660000666d00097797792000000000000000000000000155555100000000077707770000000000000000000000000
-06660000009aa9000009900000222200601060000066000097797792000000000000000000000000555500000000000000777100000000000000000000000000
+60006d60600000006d000000600000006d00000006606600066066000001000000777700200000028787878700777700000000400000000000a00000c0c00000
+6600d6d06d000000666d00006d00000060dd000060160160610d106101112200007777001210012112100121070000700000040100000000a7aaa0000c010000
+66606d6066d000006666610060d00000d6666000610d1061d6f666d1112222200066660020007702200077027077000700004010000000000aaa0100c0c00c00
+6d006000666d000001611100600d000000600000d6f666d1066f6610112020200011aa002000000220000002707700070442010022222222aa0aa0a0010100c0
+606060006666d00000d100006000d00000d000000ddddd1100111110112202200a11aa112000000220000002700000076d441000111111110110110a0000000c
+000000006666610000000000d66660000000000006f6661000000000112020201a11aa1120000002200000027000000706d41000022222200000000900000005
+00000000016111000000000000600000000000000011111000000000012222000a11aa1110000001100000010700007000611000022222200000000900000005
+0000000000d100000000000000d00000000000000000000000000000000200000011aa000122221001222210007777000001000001222210000000a1000000c1
+0666000000000000000000000004200060006000066660002009002000000000a00000a0700000a0000000000000000070070070000000000000000000007660
+66d66000009aa9000009900000222400660661006d66d600099999000000000009000900000000000000001100000000071707000000000000000000000060d1
+66dd600000a77a000099a900022222200666d10066666d009979799000000000000000000000000000015555000000000177700000000000000000000000aa91
+6666600000a77a00009999000222224066d660000666d0009779779200000000000000000000000015555510000000007770777000000000000000000000aa91
+06660000009aa9000009900000222200601060000066000097797792000000000000000000000000555500000000000000777100000000000000000000000111
 66d660000000000000000000000220000100010000dd000099797992000000000a00090000000000555555510000000007001700000000000000000000000000
 66d6600000000000000000000000000000000000000000000999992500000000900000a0a0000070105011550000000070777070000000000000000000000000
 66d66000000000000000000000000000000000000000000020092500000000000000000000000000101010010000000000070000000000000000000000000000
@@ -1919,6 +2036,30 @@ __gfx__
 00000000000000009900990099000900900090009909090000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000009000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __label__
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000200000000000
+07670770000700000777000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001210012100666007770
+067600700007600007070000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020007702066d6607070
+076700700007760007070000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000002066dd607070
+07000070000777600707000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000206666607070
+07000777000777760777000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000200666007770
+00000000000777771000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000100000000000
+00000000000017111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000122221000000000000
+00000000000006100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000999000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000009999000000000000000000000000000000000000000000000000000000000000999400000000000000000000000000000000000000
+00000000000000000000009099000000099000000000000000000000000000000000000000000000000009999900000000000000000000000000000000000000
+00000000000000000000002992000000999000000000000000000000000000000000000000000000000009909900000990000000000000000000000000000000
+00000000000000000000000990000000994000000004900099400999000000000900009999000099990099009900049999000099000000000000000000000000
+00000000000000000000002920000000000009900009900999909999900009000900099999000999990099009900499099004999400000000000000000000000
+00000000000000000000009900000000000999900009909909909909909009000900990099009900990099049900990094009999999000000000000000000000
+00000000000000000000009409900009990940900099009009909990009009009900900099009000990099099902990990009900999000000000000000000000
+00000000000000000000094999990049990000900090099049900999009009409409904994099049940099999009999900009900000000000000000000000000
+00000000000000000000099902990000990000940940099999000499909029909009999990099999900099990009900000009900000000000000000000000000
+00000000000000000000099200990002900000990900090000000009909499949009000000090000000099000009900000009900000000000000000000000000
+00000000000000000000999000990009900000999900090009099009909992999009000090090000900099000009990099099400000000000000000000000000
+00000000000000000000992009900099400000994000099999099999909990999009999990099999900099000000999999099000000000000000000000000000
+00000000000000000000990009990099000000240000004940004999000400490000499400004994000994000000049940099000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000990000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -1927,101 +2068,77 @@ __label__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000009002000090020000900200009002000090020000900200009002000090020000900200009002000090020000900200009002000090020000900200000
-000009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f999000000
-00009f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999900000
-00009999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999920000
-00009999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999920000
-00009999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999920000
-00000999992209999922099999220999992209999922099999220999992209999922099999220999992209999922099999220999992209999922099999220000
-00000009220900292209002922090029220900292209002922090029220900292209002922090029220900292209002922090029220900292209002922090020
-0000000009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f99900
-000000009f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f999990
-00000000999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992
-00000000999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992
-00000000999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992
-00000000099999220999992209999922099999220999992209999922099999220999992209999922099999220999992209999922099999220999992209999922
-00000009002922090029220900292209002922090029220900292209002922090029220900292209002922090029220900292209002922090029220900292200
-000009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f999000000
-00009f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999900000
-00009999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999920000
-00009999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999920000
-00009999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999920000
-00000999992209999922099999220999992209999922099999220999992209999922099999220999992209999922099999220999992209999922099999220000
-00000009220900292209002922090029220900292209002922090029220900292209002922090029220900292209002922090029220900292209002922090020
-0000000009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f99900
-000000009f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f999990
-00000000999999929999999299999992999999929998999299999992999999929999999299999992999999929999999299999992999999929999999299999992
-0000000099999992999999929999999299999992999849aa99999992999999929999999299999992999999929999999299999992999999929999999299999992
-000000009999999299999992999999929999999299988a77a9999992999999929999999299999992999999929999999299999992999999929999999299999992
-000000000999992209999922099999220999992209988a77a9999922099999220999992209999922099999220999992209999922099999220999992209999922
-0000000900292209002922090029220900292209002889aa90292209002922090029220900292209002922090029220900292209002922090029220900292200
-000009f9990009f9990009f9990009f9990009f999088888090009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f999000000
-00009f9999909f9999909f9999909f9999909f999990080009909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999900000
-0000999999929999999299999992999999929999999294099992999999929999999299999992999999929999999299999992999999929999999299a999920000
-000099999992999929aa99999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299a99aa90000
-00009999999299999a77a9999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299aaa77a0000
-00000999992209999a77a9999922099999220999992209999922099999220999992209999922099999220999992209999922099999220999992209aaa77a0000
-000000092209002999aa90292209002922090029220900292209002922090029220900292209002922090029220900292209002922090029220900aa9aa90020
-0000000009f999099999090009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f999aaaaa09900
-000000009f999990090009909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f999990a0009990
-00000000999999929209999299999992999999929999999299999992999999929999999299999992999999929999999299b99992999999929999999290999992
-00000000999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299b39aa9999999929999999299999992
-00000000999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299bba77a999999929999999299999992
-00000000099999220999992209999922099999220999992209999922099999220999992209999922099999220999992209bba77a099999220999992209999922
-00000009002922090029220900292209002922090029220900292209002922090029220900292209002922090029220900bb9aa9002922090029220900292200
-000009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f999bbbbb0990009f9990009f999000000
-00009f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f999990b00099909f9999909f9999900000
-00009999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999923099999299999992999999920000
-00009999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999920000
-00009999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999920000
-00000999992209999922099999220999992209999922099999220999992209999922099999220999992209999922099999220999992209999922099999220000
-00000009220900292209002922090029220900292209002922090029220900292209002922090029220900292209002922090029220900292209002922090020
-0000000009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f99900
-000000009f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f999990
-00000000999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992
-00000000999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992
-00000000999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992
-00000000099999220999992209999922099999220999992209999922099999220999992209999922099999220999992209999922099999220999992209999922
-00000009002922090029220900292209002922090029220900292209002922090029220900292209002922090029220900292209002922090029220900292200
-000009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f999000000
-00009f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999900000
-00009999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999920000
-00009999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999920000
-00009999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999920000
-00000999992209999922099999220999992209999922099999220999992209999922099999220999992209999922099999220999992209999922099999220000
-00000009220900292209002922090029220900292209002922090029220900292209002922090029220900292209002922090029220900292209002922090020
-0000000009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f9990009f99900
-000000009f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f9999909f999990
-00000000999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992
-00000000999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992
-00000000999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992999999929999999299999992
-00000000099999220999992209999922099999220999992209999922099999220999992209999922099999220999992209999922099999220999992209999922
-00000000000922000009220000092200000922000009220000092200000922000009220000092200000922000009220000092200000922000009220000092200
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000600000777070007770707000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000066666000707070007070707000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000666666600777070007770777000000000000000000000000000000000000000000000000000000000000000000000000
+000000000000000000000000000000006666666d0700070007070007000000000000000000000000000000000000000000000000000000000000000000000000
+000000000000000000000000000000006666666d0700077707070777000000000000000000000000000000000000000000000000000000000000000000000000
+000000000000000000000000000000006666666d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000066666dd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000000000000000000000000000000006dd060000007707770777077700770770007700000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000006666600070707070070007007070707070000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000066666660070707770070007007070707077700000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000006666666d070707000070007007070707000700000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000006666666d077007000070077707700707077000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000006666666d000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000000000000000000000000000000000066666dd000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000090006dd00000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000009f999000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000000000000000000000000000009f9999900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000999799920000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000999769aa9000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000099977a77a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000009977a77a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000779aa9000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000777770900000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000007000990000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000096099992000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000099999992000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000099999992000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000009999922000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000900092200000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000009f999000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000000000000000000000000000009f9999900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000999999920000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000999999920000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000999999920000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000099999220000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000922090000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000009f99900000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000009f999990000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000099999992000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000099999992000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000099999992000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000009999922000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000900092200000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000009f999000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000000000000000000000000000009f9999900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000999999920000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000999999920000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000999999920000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000099999220000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000922090000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000009f99900000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000009f999990000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000099999992000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000099999992000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000099999992000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000009999922000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000900092200000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000009f999000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000000000000000000000000000009f9999900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000999999920000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000999999920000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000999999920000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000099999220000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000922090000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000009f99900000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000009f999990000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000099999992000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000099999992000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000099999992000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000009999922000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000092200000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -2048,8 +2165,6 @@ __label__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 
-__map__
-0000000000000007000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __sfx__
 011900001e14500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 01100000101501b000140001a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -2057,14 +2172,14 @@ __sfx__
 050100000d110251102b110131201c12015120161200b11016110141101311012120121201213012140121301213015140161401a1401b1401a140191401a1401a1401c1401c1401a14017120151201413012140
 01020000200102201023020230202303006040060501d050130300d03000000000000000000000000000c0300e040170501a05018050140500e0300d02000000220502205012050120500a0500a0500a05000000
 01020000230451e050230501e052230521e0422804521050280502105228052210520000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-01060000117141c712237152d1553b051007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700
+01060000117141c712237152d1553b05118615007000070013645180241f03426144007000070000700007000c6441a024131340c144007000070000700007000070000700007000070000700007000000000000
 0103000027045220501f050180522905224042220451d0502b05026052240521d052000000000000000000002e0502905027050220502c0502705025050200502a05025050200501805000000000000000000000
 0107000010045150450e04513045000000e00000000000001e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 000200001613019620116101e12006610201100261004620046200d60000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600
 000200000a1200362017130076200a6200a1100562011110026100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 01010000241501f140191401013009120000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 9103000027140221401d1401714027120221201d1201712027110221101d110171100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-91020000136501b1100c6200365016120000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+91020000136501b1100c6200365016120000000000000000181250e63005120000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 9003000013610141200c6200362019020000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 010a00001e050160551b0501e0551d05014055190501d0551c05012054170551b0521c0521b052170521305512055000001205517050000001c0411c0511b0551705512050000000000000000000000000000000
 010e00001e1311e14016140161201b1301b1421e1551b1001d1511d130181521813019130191421d155120001c1501c1450010000100001000010000100001001c1501c135001001c1551c1551c1150010000100
