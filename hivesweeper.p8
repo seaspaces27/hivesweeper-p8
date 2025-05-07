@@ -8,26 +8,22 @@ function _init()
  unopened=0 total_bees=0
  level=1
  titlecards={}
- plrs={0,0,0,0,0,0,0,0,0}
+ plrs=split("0,0,0,0,0,0,0,0,0")
  ents={}
- cols={7,10,11,12,13,14,15,8,
-	6, 9,4,5,3,2,1,0}
-	cols_shade={6,4,3,5,5,4,4,5,
-	4, 3,5,1,1,1,0,5}
+ cols=split("7,10,11,12,13,14,15,8,  6, 9,4,5,3,2,1,0")
+	cols_shade=split("6,4,3,5,5,4,4,5, 4, 3,5,1,1,1,0,5")
  init_menu()
 end
 
 function init_menu()
-	menu={}menu.mode="menu"
-	menu.screen=0 menu.offset=0 
-	--menu.tiles={"play","options"}
-	--menu.history={}
- menu.active=true
- menu.reset=function(s)
+	menu={mode="menu",
+	screen=0,offset=0,active=true,
+	reset=function(s)
   s.mode="menu"
 		s.screen=0 s.offset=0 level=1
 	 s.active=true s:init()
  end
+	}
  menu.init=function(s)
   for i,v in pairs(players)do
    v.alive=true
@@ -194,8 +190,7 @@ function init_menu()
  menu.drw=function(s)
   if level==1 and s.mode~="tutorial"then
 	  for i=1,#s.tiles do
-	   local ox=9
-	   local cell=hives_screen_pos[i]
+	   local ox,cell=9,hives_screen_pos[i]
 	   print(s.tiles[i],
 	   cell[1]+ox,cell[2],7)
 	  end
@@ -233,24 +228,22 @@ function join_plr(p)
  #players*2)
 end
 
-function setchr(s,i,c)
- return sub(s,1,i-1)..c..sub(s,i+1)
-end
-num_cols={12,11,8,12,14,13,5}
---cols={8,9,10,11,12,13,14,15,6,7}
---cols_shade={4,2,9,3,5,5,4,4,13,6}
+--function setchr(s,i,c)
+-- return sub(s,1,i-1)..c..sub(s,i+1)
+--end
+num_cols=split("12,11,8,12,14,13,5")
+
 function part(id,x,y,t)
- pa={}pa.tag=nil pa.id=id or 0
- pa.x=x or 64 pa.y=y or 64
- pa.t=t or -1 pa.flicker=nil
- pa.recol={}
- pa.upd=function(s)
+	pa={tag=nil, id=id or 0,
+	x=x or 64, y=y or 64, t=t or -1,
+	flicker=nil, recol={},
+ upd=function(s)
   s.t-=1
   if s.t<=0 then
    del(parts,s)
   end
- end
- pa.drw=function(s)
+ end,
+ drw=function(s)
   if s.flicker then
    if s.t%s.flicker<(min(s.flicker,4))then
     return
@@ -263,7 +256,7 @@ function part(id,x,y,t)
   end
   spr(s.id,s.x,s.y)
   pal()
- end
+ end}
  add(parts,pa)
  return pa
 end
@@ -271,7 +264,7 @@ function sp_part(id,x,y,dx,dy,ang_change,t)
  pa=part(id,x,y)pa.t=t or pa.t
  pa.ang_change=ang_change
  pa.dx=dx or rnd(4)-8 pa.dy=dy or rnd(1)
- pa.gx=.94 pa.gy=.1 
+ pa.gx,pa.gy=.94,.1 
  pa.ang=0
  pa.upd=function(s)
   s.t-=1
@@ -303,26 +296,19 @@ function sp_part(id,x,y,dx,dy,ang_change,t)
  return pa
 end
 function set_flag(id,plr)
- fl={} fl.from=plr
- fl.c=plr.c
- local cell=hives_screen_pos[id]
- fl.x=cell[1]
- fl.y=cell[2] --cell.temp_press=true
- fl.dx=0 fl.dy=0 fl.id=id
- sfx(9)
- if flagfield[fl.id]then
-  flagfield[fl.id]+=1
- else
-  flagfield[fl.id]=1
- end
- fl.upd=function(s)
+	local cell=hives_screen_pos[id]
+ fl={from=plr,c=plr.c,
+ x=cell[1],y=cell[2], --cell.temp_press=true
+ dx=0,dy=0,id=id,
+ upd=function(s)
 	 if(not s.dying)then
 	  local cell=hives_screen_pos[id]
-  	s.x=lerp(s.x,cell[1],.4)
-  	s.y=lerp(s.y,cell[2],.4)
+  	s.x,s.y=
+  	lerp(s.x,cell[1],.4),
+  	lerp(s.y,cell[2],.4)
   end
- end
- fl.drw=function(s)
+ end,
+ drw=function(s)
   if not s.dying then
   if(s.from)then
    pal(6,cols[s.c])
@@ -331,8 +317,8 @@ function set_flag(id,plr)
   end
   local oy=is_pressed(s.id)
   spr(7,s.x,s.y+oy)pal() end
- end
- fl.remove=function(s)
+ end,
+ remove=function(s)
   local corpse=sp_part(7,s.x,s.y,
   rrnd(1.5),-1.5,true)
   if(s.from)then
@@ -351,6 +337,12 @@ function set_flag(id,plr)
   end
   s.id=nil
   del(flags,s)
+ end}
+ sfx(9)
+ if flagfield[fl.id]then
+  flagfield[fl.id]+=1
+ else
+  flagfield[fl.id]=1
  end
  add(flags,fl)
  return fl
@@ -523,8 +515,7 @@ function _draw()cls()
  os=64-sz*4
  --draw cells
  for i=1,#hives_screen_pos do
-  local cell=hives_screen_pos[i]
-  local id=1
+  cell,id=hives_screen_pos[i],1
   if(revealed[i]==true)id=2
   if(hidden[i]==true)id=3
   if mines[i] then
@@ -532,15 +523,17 @@ function _draw()cls()
    or revealed[i] and 6 or id
   end
   if cell.act then
-   if(cell.act=="back")id=49
-   if(cell.act=="again")id=50
-   if(cell.act=="next")id=51
+  	id=cell.act=="back" and 49 or
+  	cell.act=="again" and 50 or
+  	cell.act=="next" and 51 or id
+--   if(cell.act=="back")id=49
+--   if(cell.act=="again")id=50
+--   if(cell.act=="next")id=51
    pal(1,5)
    pal(9,6)pal(2,13)pal(15,6)
   end
   local oy=0
-  if cell.pressing then oy=1 end
-  if cell.temp_press then oy=1 end
+  if(cell.pressing or cell.temp_press)oy=1
   local sh=shockwaves[i]
   if sh then
    if(sh[1]>=0)oy+=rrnd(2)
@@ -562,17 +555,18 @@ function _draw()cls()
  --menu
  if(menu.active)menu:drw()
 
- for i=1,#reveal_que do
-  reveal_que[i]:drw()
+ for r in all(reveal_que) do
+  r:drw()
  end
- for i=1,#flags do
-  local fl=flags[i]
+ 
+ for fl in all(flags)do
   fl:drw()
  end
+ 
  for i=#parts,1,-1 do
-  local pa=parts[i]
-  pa:drw()
+  parts[i]:drw()
  end
+ 
  for i=#hblobs,1,-1 do
   hblobs[i]:drw_outline()
  end for i=#hblobs,1,-1 do
@@ -587,8 +581,7 @@ function _draw()cls()
  --draw mouse
  pal(1,0)
  for i=1,#players do
-  local plr=players[i]
-  plr:drw()
+  players[i]:drw()
  end
  pal()
  --draw titlecard
@@ -674,13 +667,12 @@ function mark_hex(id,t,plr)
 end
 
 --highlight
-function hilight(cell)
- spr(3,cell[1],cell[2])
-end
+--function hilight(cell)
+-- spr(3,cell[1],cell[2])
+--end
 
 function swap_bee(id,t_id)
- mines[id]=false
- mines[t_id]=true
+ mines[id],mines[t_id]=false,true
 end
 
 function relocate_bee(id,t_id)
@@ -743,19 +735,18 @@ function cprint(txt,x,y,c)
 end
 -->8
 function timer_reset()
- t_start=nil t_end=nil
+ t_start,t_end,
  game_length=nil
 end
 function timer_start()
- t_start=time()
- game_length=0
+ t_start,game_length=time(),0
 end
 function timer_end()
  t_end=time()
  game_length=t_end-(t_start or t_end)
 end
 
-function shake_cells(amt,frames)
+function shake_cells(amt)--,frames)
  for i,v in pairs(hives_screen_pos)do
   v[1]+=rrnd(amt)
   v[2]+=rrnd(amt)
@@ -779,19 +770,19 @@ function winlose(gameover,plr)
  	sfx(3)
   shake_cells(1,2)
   
-  if true then--menu.mode~="vs"or all_dead then
+  --if true then--menu.mode~="vs"or all_dead then
 	  gamerunning=false
 	  local offset=0
 	  for j=1,#mines do
 	  --mark all mines
 	   if mines[j]==true and revealed[j]==false then
 	    offset+=1
-	    local mark=mark_hex(j,offset)
+	    mark_hex(j,offset).lose_all=false
 	    --avoid recursion
-	    mark.lose_all=false
+	    --mark.lose_all=false
 	   end
   	end
-  end
+  --end
  else
   --detect win
   local complete=true
@@ -820,7 +811,6 @@ function end_bits(gameover)
 end
 
 function neighbours(id,range,outer)
- local dirs={"tl","tr","l","r","bl","br"}
  local adj={}
  range=range or 1
  for i=1,#dirs do
@@ -842,7 +832,7 @@ function is_pressed(id)
  return(hives_screen_pos[id].pressing or hives_screen_pos[id].temp_press)and 1 or 0
 end
 
-dirs={"tl","tr","r","br","bl","l"}
+dirs=split("tl,tr,r,br,bl,l",true)
 function transpose(id,os)
  if(id==nil)return
  local mod_x=id%hive_wi
@@ -900,8 +890,7 @@ end
 
 function chord_cell(i,perform,plr)
  local adj=neighbours(i)
- local nonflags={}
- local flags_near=0
+ nonflags,flags_near={},0
  for j=1,#adj do --get flags
   if(flagfield[adj[j]]or 0)>0then
   	flags_near+=1
@@ -944,7 +933,6 @@ function release_cell(i,plr)
  if hives_screen_pos[i] then
   hives_screen_pos[i].pressing=nil
  end
- selecting=nil
 end
 
 function perform_act(id)
@@ -1011,10 +999,9 @@ function shockwave(id,t,loops,ic,stun_time)
 end
 
 function new_titlecard(title,t,sf)
- cs={}cs.t=t or 90cs.title=title or "h"
- cs.init=false
- 
- cs.upd=function(s)
+ cs={t=t or 90,title=title or "h",
+ init=false,
+ upd=function(s)
   if not s.init then
    if(#titlecards==0)sfx(-1)
    if(sf==nil)then sfx(15,3,0,16)
@@ -1027,12 +1014,12 @@ function new_titlecard(title,t,sf)
    if(s.sf~=nil)sfx(4)
    del(titlecards,s)
   end
- end
- cs.drw=function(s)
+ end,
+ drw=function(s)
   color(7)
  	ox=print("\#0"..s.title,0,-8)
  	print("\#0"..s.title,64-ox/2,64)
- end
+ end}
  add(titlecards,cs)
  return cs
 end
@@ -1189,10 +1176,10 @@ transition.upd=function(s)
   for i,v in pairs(hives_screen_pos)do
 	  local target=s.screenpos[i]
 	  
-	  local dx=abs(target[1]-64)
-	  local dy=abs(target[2]-64)
-	  local dist=sqrt(dx+dy)
-	  local a=atan2(dx,dy)
+	  dx,dy=abs(target[1]-64),
+	  abs(target[2]-64)
+	  local dist,a=sqrt(dx+dy),
+	  atan2(dx,dy)
 	  
 	  local amt=.1+((dist/64)+a)*.1
 	  v[1]=lerp(v[1],target[1]
@@ -1228,7 +1215,7 @@ end
 function ui_draw()color(7)
  --str=#flags
  --str=all_bees
- local tx=1 ty=1
+ local tx,ty=1,1
 	sspr(4,8,3,5,tx,ty)tx+=4
 	local ox=print(all_bees-#flags,tx,ty)
 	ox+=2
