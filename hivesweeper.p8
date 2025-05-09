@@ -193,11 +193,12 @@ function init_menu()
 	   local ox,cell=9,hives_screen_pos[i]
 	   print(s.tiles[i],
 	   cell[1]+ox,cell[2],7)
+	   --spr(50,cell[1],cell[2])
 	  end
   end
   //pal(1,0)
   palt(1,1)
-  sspr(8,32,8*12,8*2,16,8)
+  sspr(8,32,96,16,16,8)
   pal()
  end
 end
@@ -522,36 +523,39 @@ function _draw()cls()
    id=debug and 5
    or revealed[i] and 6 or id
   end
-  if cell.act then
-  	id=cell.act=="back" and 49 or
-  	cell.act=="again" and 50 or
-  	cell.act=="next" and 51 or id
---   if(cell.act=="back")id=49
---   if(cell.act=="again")id=50
---   if(cell.act=="next")id=51
+  local x,y,act=cell[1],cell[2],cell.act
+  if act then
+  	id=act=="back" and 49 or
+  	act=="again" and 50 or
+  	act=="next" and 51 or id
    pal(1,5)
    pal(9,6)pal(2,13)pal(15,6)
+   if highlight_last and not gamerunning then
+   	--part(40,x,y,3)
+   	pal(6,10)
+   	y+=rrnd(.3)
+   end
   end
+  
   local oy=0
   if(cell.pressing or cell.temp_press)oy=1
-  local sh=shockwaves[i]
-  if sh then
-   if(sh[1]>=0)oy+=rrnd(2)
+  if shockwaves[i] then
+   if(shockwaves[i][1]>=0)oy+=rrnd(2)
   end
   if cell.col then
    pal(9,cols[cell.col])
    pal(2,cols_shade[cell.col])
   end
-  spr(id,cell[1],cell[2]+oy)pal()
+  spr(id,x,y+oy)pal()
   --if(sh)print(sh[3],cell[1]+2,cell[2]+1,7)
   if debug or revealed[i]then
    local txt=(not mines[i] and numbers[i]) or ""
-	  print(txt,cell[1]+2,cell[2]+1+oy,
+	  print(txt,x+2,y+1+oy,
 	  num_cols[numbers[i]])
   end
   //print(beehive[i],cell[1],cell[2],7)
  end
-
+	highlight_last=false
  --menu
  if(menu.active)menu:drw()
 
@@ -573,15 +577,15 @@ function _draw()cls()
   hblobs[i]:drw()
  end
  --draw entities
- for i=1,#ents do
-  ents[i]:drw()
+ for e in all(ents) do
+  e:drw()
  end
  --draw ui
  ui_draw()
  --draw mouse
  pal(1,0)
- for i=1,#players do
-  players[i]:drw()
+ for p in all(players) do
+  p:drw()
  end
  pal()
  --draw titlecard
@@ -754,24 +758,32 @@ function shake_cells(amt)--,frames)
 end
 
 function winlose(gameover,plr)
- local all_dead=true
+ local living=0
  for p in all(players)do
-  if(p.alive)all_dead=false break
-  --[[idea, dead players'
+  if(p.alive)living+=1
+  --[[idea, dead players
    honey should go back to
    the board, and repopulate
    the hive, relocating the
    bees within that area?
   ]]--
  end
+ if(all_dead)gameover=true
  if gameover then--unopened<(total_bees or 0) then
   --lost
+  local all_dead=true
   if(plr)plr:die()
+  for p in all(players)do
+  	if(p.alive)all_dead=false
+ 	end
  	sfx(3)
   shake_cells(1,2)
   
-  --if true then--menu.mode~="vs"or all_dead then
+  if menu.mode~="vs" or living==1then
 	  gamerunning=false
+	  for p in all(players)do
+	  	p.alive=false
+	  end
 	  local offset=0
 	  for j=1,#mines do
 	  --mark all mines
@@ -782,7 +794,7 @@ function winlose(gameover,plr)
 	    --mark.lose_all=false
 	   end
   	end
-  --end
+  end
  else
   --detect win
   local complete=true
@@ -794,8 +806,16 @@ function winlose(gameover,plr)
   if complete then
 	  --win
 	  gamerunning=false
-	  if not menu.active then music(1)
-	  else sfx(20)end
+	  if not menu.active then
+	  	if menu.mode=="regular"and
+	  	level==9then
+	  		sfx(40)
+	  	else
+	  		music(1)
+	  	end
+	  else
+	  	sfx(20)
+	  end
   end
  end
  
@@ -803,11 +823,41 @@ function winlose(gameover,plr)
  	--menu.active=true
  	end_bits(gameover)
  	timer_end()
+ 	upd_scr()
+ 	gamerunning=false
  end
 end
 function end_bits(gameover)
 	new_cell().act=gameover and "back"or"next"
-	if(gameover)new_cell().act="again"
+	if gameover then
+		local cell=new_cell()
+		cell.act="again"
+		if menu.mode=="vs"then 
+			cell.act="next"
+		end
+	end
+end
+function upd_scr()
+	if menu.mode=="vs"then
+		local max_pips=0
+		winner=nil
+		for p in all(players)do
+			if p.pips>=max_pips then
+				max_pips=p.pips
+				winner=p
+			end
+		end
+		winner.scr+=1
+		
+		max_scr=0
+		for p in all(players)do
+			if p.scr>=max_scr then
+				max_scr=p.scr
+				winner=p
+			end
+		end
+		winner.winner=true
+	end
 end
 
 function neighbours(id,range,outer)
@@ -1212,6 +1262,7 @@ end
 --flag_icon="\^:0707070404000000"
 --clock_icon="\^:0e151d110e000000"
 --function header()end
+
 function ui_draw()color(7)
  --str=#flags
  --str=all_bees
@@ -1227,13 +1278,18 @@ function ui_draw()color(7)
 	 local ol=0
 	 pal(6,cols[p.c])
 	 pal(13,cols_shade[p.c])
-	 spr(17,ox,ty)
+	 sspr(0,8,3,5,ox,ty)ox+=4
+	 --spr(17,ox,ty)
 	 pal()
-	 scr=menu.mode=="vs"and p.pips
-	 or p.clicks
-	 ol=print(scr,ox+6,ty)
-	 ox=ol
-	end
+	 scr=p.clicks
+	 if menu.mode=="vs" then
+	 	scr=p.scr
+	 	print("\#0\f9"..p.pips,ox,ty+7)
+	 end
+	 color(p.alive and 7 or 8)
+	 ol=print(scr,ox,ty)
+	 ox=ol+1
+	end color(7)
 	--print(flag_icon..all_bees-#flags)
  //if  then ct=(start and flr(time())-start) or "0:00"
  //else ct=game_length or"0:00"end
@@ -1344,7 +1400,6 @@ function add_plr(i)
 	   s.pressing=nil
 	  end
 	 end
-	 
 	 if s.hin==0 and s.vin==0 then
 	 	s.wt=s.wt>0 and s.wt-1 or 0
 	 elseif s.wt<8then
@@ -1380,6 +1435,9 @@ function add_plr(i)
 		else
 		 if(s.cooldown>=1)s.cooldown-=1
 		end
+		if s.a then
+		 highlight_last=true
+		end
 		--set cell to pressed
 		if s.ap and s.id then
 		 hives_screen_pos[s.id].pressing=true
@@ -1388,8 +1446,8 @@ function add_plr(i)
 		if s.id~=s.togo then --moved
 		 local cl=10
 		 if s.noflag then
-		  if noflag==0 or s.noflag==-1 then
-		   cl=8
+		  if s.noflag<=0 then
+		   cl=7
 		  end
 		 end
 		 --s.pressing=nil
@@ -1483,7 +1541,7 @@ function add_plr(i)
 			s.x+=((cell[1]+3)-s.x)*.35 //.4
 			s.y+=((cell[2]+3)-s.y)*.35 //.7
 		else
-		 s.x=stat(32) s.y=stat(33)
+		 s.x,s.y=stat(32),stat(33)
 		end
 	end
 	plr.drw=function(s)
@@ -1492,7 +1550,8 @@ function add_plr(i)
 	 local id=17
 	 --if(s.pressing~=nil)id=18
 	 if(s.a)id=18
-	 id=s.winner and id+4 or
+	 id=(s.winner and not gamerunning)
+	 and id+4 or
 	 (s.alive and id or id+2)
 	 if s.mouse==true then
 	  --ghost at actual mouse postiion
@@ -1514,7 +1573,9 @@ function add_plr(i)
    return
   end
   s.alive=false
-  winlose()
+  if gamerunning then
+  	winlose()
+  end
 	end--]]--
 	return plr
 end
@@ -1872,18 +1933,18 @@ function validate_moves(ents,skip)
   plr.togo=plr.togo or plr.id
   if plr.togo~=plr.id then
    --todo:add a bounds check
-   if plr.togo<1 and plr.togo>(hexs) then
-    --plr.togo=plr.id
-   end
-   for j,oplr in pairs(players)do
-    --if both plrs going to same spot
-    local oplr=players[j]
-    if i~=j and oplr.togo==plr.togo then
-     --cancel both movements
-     oplr.togo=oplr.id
-     plr.togo=plr.id
-    end
-   end
+--   if plr.togo<1 and plr.togo>(hexs) then
+--    --plr.togo=plr.id
+--   end
+--   for j,oplr in pairs(players)do
+--    --if both plrs going to same spot
+--    local oplr=players[j]
+--    if i~=j and oplr.togo==plr.togo then
+--     --cancel both movements
+--     oplr.togo=oplr.id
+--     plr.togo=plr.id
+--    end
+--   end
   end
  end
  --last pass, apply verified moves
@@ -1893,6 +1954,7 @@ function validate_moves(ents,skip)
    move_sfx=true
    plr.id=plr.togo
    check_powerups(plr)
+   if(plr.noflag<=0)sp_part(43,plr.x,plr.y+2,0,-1,0,12)
   end
  end
  if(move_sfx)sfx(8,0,flr(rnd(4)),1)
@@ -1923,7 +1985,7 @@ function flip_dirs_h(dir)
  or dir=="br"and"bl"
 end
 -->8
-menu_lvls={5,8,13,21,34,55,89,144,233,377}
+menu_lvls=split("5,8,13,21,34,55,89,144,233,377")
 function new_lvl_menu()
  set_new_hive(function()
   new_hive(1,menu_lvls[level],nil,
@@ -1947,8 +2009,7 @@ function()new_hive(15,14)end,
 "4,4, 5,5, 7,7, 8,8, 9,5, 12,9, 13,10, 14,12, 15,14"
 function new_lvl_regular()
  local data=split(regular_lvls)
- local hx=data[-1+level*2]
- local hy=data[level*2]
+ hx,hy=data[-1+level*2],data[level*2]
  set_new_hive(
   function()new_hive(hx,hy)end
  ,1)
@@ -2000,8 +2061,8 @@ __gfx__
 0666000000000000000000000004200060006000066660002009002000000000a00000a0700000a0000000000000000070070070000000000000000000007660
 66d66000009aa9000009900000222400660661006d66d600099999000000000009000900000000000000001100000000071707000000000000000000000060d1
 66dd600000a77a000099a900022222200666d10066666d009979799000000000000000000000000000015555000000000177700000000000000000000000aa91
-6666600000a77a00009999000222224066d660000666d0009779779200000000000000000000000015555510000000007770777000000000000000000000aa91
-06660000009aa9000009900000222200601060000066000097797792000000000000000000000000555500000000000000777100000000000000000000000111
+6666600000a77a00009999000222224066d660000666d0009779779200000000000000000000000015555510000060007770777000000000000000000000aa91
+06660000009aa9000009900000222200601060000066000097797792000000000000000000000000555500000006000000777100000000000000000000000111
 66d660000000000000000000000220000100010000dd000099797992000000000a00090000000000555555510000000007001700000000000000000000000000
 66d6600000000000000000000000000000000000000000000999992500000000900000a0a0000070105011550000000070777070000000000000000000000000
 66d66000000000000000000000000000000000000000000020092500000000000000000000000000101010010000000000070000000000000000000000000000
@@ -2170,7 +2231,7 @@ __sfx__
 011900001e14500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 01100000101501b000140001a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 010100000c0450b115136340b620000000000000000000001b1101a1101b1101a1201b1201a1201b1301a1301b1201a1201b1201a1101b1101a1101b1101a1100000000000000000000000000000000000000000
-050100000d110251102b110131201c12015120161200b11016110141101311012120121201213012140121301213015140161401a1401b1401a140191401a1401a1401c1401c1401a14017120151201413012140
+040100000d110251102b110131201c12015120161200b11016110141101311012120121201213012140121301213015140161401a1401b1401a140191401a1401a1401c1401c1401a14017120151201413012140
 01020000200102201023020230202303006040060501d050130300d03000000000000000000000000000c0300e040170501a05018050140500e0300d02000000220502205012050120500a0500a0500a05000000
 01020000230451e050230501e052230521e0422804521050280502105228052210520000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 01060000117141c712237152d1553b05118615007000070013645180241f03426144007000070000700007000c6441a024131340c144007000070000700007000070000700007000070000700007000000000000
@@ -2207,8 +2268,8 @@ __sfx__
 010f00000000000000000000000000000000000000000000000000000000000000000000003050000000000004050000000000005050000000000008050000000d0500d0550805014000190361c036220351b050
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+011000001e0551e0551e0552005500000000001e0551e0551e0542005500000230542205500000200541e05500000000000000000000000001205500000120541705500000000001c0521b055170521205500000
+011000001215000000000001715000000000001215000000000001015000000000001215000000000000b15000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -2239,4 +2300,5 @@ __music__
 00 22424344
 00 23424344
 00 24254344
+00 28294344
 
